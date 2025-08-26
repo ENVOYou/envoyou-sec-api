@@ -245,6 +245,19 @@ Returns EDGAR urban emissions data with trend analysis.
 - `pollutant` (optional): Pollutant type (default: "PM2.5")  
 - `window` (optional): Trend analysis window in years (default: 3)
 
+## Endpoint Data Global
+
+### GET /global/campd
+
+Mengekspos data mentah dari API CAMPD untuk fasilitas tertentu.
+
+**Parameter Kueri:**
+- `facility_id` (integer, wajib): ID fasilitas dari CAMPD.
+
+**Contoh Permintaan:**
+```bash
+curl -X GET "http://localhost:5000/global/campd?facility_id=12345"
+
 #### 8. CEVS Composite Score
 **GET** `/global/cevs/<company>`
 

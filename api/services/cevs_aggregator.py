@@ -8,6 +8,8 @@ from api.clients.global_client import KLHKClient as EPAClient
 from api.clients.iso_client import ISOClient
 from api.clients.eea_client import EEAClient
 from api.clients.edgar_client import EDGARClient
+# --- PERUBAHAN 1: Impor CAMDClient ---
+from api.clients.campd_client import CAMDClient
 from api.utils.policy import load_best_practices, practices_for_country
 
 logger = logging.getLogger(__name__)
@@ -25,8 +27,22 @@ def compute_cevs_for_company(company_name: str, *, company_country: Optional[str
       - +30 if company has ISO 14001 certification
       - - up to 30 penalty based on EPA results count in the company's state (proxy via name contains)
       - + up to 20 boost for EEA indicator improvements (placeholder)
+      - - up to 50 penalty based on CAMPD emissions and compliance data
     """
     company_key = _normalize_name(company_name)
+
+    # --- PERUBAHAN 2: Inisialisasi CAMDClient ---
+    campd_client = CAMDClient()
+    
+    # Placeholder untuk pemetaan nama perusahaan ke ID fasilitas CAMPD.
+    # Dalam implementasi nyata, Anda memerlukan cara yang lebih dinamis untuk mendapatkan ini.
+    facility_id_map = {
+        "example power plant inc.": 12345,
+        "tennessee valley authority": 7, # Contoh nyata
+        "southern company": 553, # Contoh nyata
+    }
+    facility_id = facility_id_map.get(company_key)
+
 
     # EPA: use permits data normalized list, then filter by company name
     epa_client = EPAClient()
@@ -72,7 +88,9 @@ def compute_cevs_for_company(company_name: str, *, company_country: Optional[str
         "epa_penalty": 0.0,
         "renewables_bonus": 0.0,
         "pollution_penalty": 0.0,
-    "policy_bonus": 0.0,
+        "policy_bonus": 0.0,
+        # --- PERUBAHAN 3: Tambahkan komponen baru untuk CAMPD ---
+        "campd_penalty": 0.0,
     }
 
     if has_iso:
@@ -186,6 +204,49 @@ def compute_cevs_for_company(company_name: str, *, company_country: Optional[str
     components["policy_bonus"] = policy_bonus
     score += policy_bonus
 
+    # --- PERUBAHAN 4: Logika penskoran untuk data CAMPD ---
+    campd_penalty = 0.0
+    campd_details = {}
+    if facility_id:
+        try:
+            emissions_data = campd_client.get_emissions_data(facility_id)
+            compliance_data = campd_client.get_compliance_data(facility_id)
+            
+            # Logika penalti emisi (contoh sederhana)
+            # Penalti berdasarkan total emisi CO2, SO2, dan NOx
+            # Anda harus menyesuaikan ambang batas ini
+            emissions_penalty = 0
+            if emissions_data:
+                total_co2 = sum(d.get('co2Mass', 0) for d in emissions_data)
+                total_so2 = sum(d.get('so2Mass', 0) for d in emissions_data)
+                total_nox = sum(d.get('noxMass', 0) for d in emissions_data)
+                
+                if total_co2 > 5000000: emissions_penalty += 10
+                if total_so2 > 1000: emissions_penalty += 5
+                if total_nox > 1000: emissions_penalty += 5
+            
+            # Logika penalti kepatuhan
+            # Penalti 20 poin jika ada satu saja indikator tidak patuh
+            compliance_penalty = 0
+            if compliance_data:
+                is_compliant = all(d.get('compliantIndicator', 1) == 1 for d in compliance_data)
+                if not is_compliant:
+                    compliance_penalty = 20
+
+            campd_penalty = min(40.0, emissions_penalty + compliance_penalty) # Batasi penalti maksimal
+            campd_details = {
+                "facility_id": facility_id,
+                "emissions_penalty": emissions_penalty,
+                "compliance_penalty": compliance_penalty,
+                "total_penalty": campd_penalty
+            }
+
+        except Exception as e:
+            logger.warning(f"Gagal mengambil atau memproses data CAMPD untuk facility_id {facility_id}: {e}")
+
+    components["campd_penalty"] = -campd_penalty
+    score -= campd_penalty
+    
     # Clamp score to [0, 100]
     score = max(0.0, min(100.0, score))
 
@@ -209,5 +270,7 @@ def compute_cevs_for_company(company_name: str, *, company_country: Optional[str
             "renewables": {"country_row": renew_row, "eu_row": eu_row, "bonus_calc": renew_details},
             "pollution_trend": pol_details or pol_trend,
             "policy": policy_details,
+            # --- PERUBAHAN 5: Tambahkan detail CAMPD ke output ---
+            "campd": campd_details,
         },
     }

@@ -213,6 +213,13 @@ Documentation
 - ISO: CSV/JSON and Excel list (ISO_CSV_URL, ISO_XLSX_PATH)
 - EDGAR: UCDB Excel aggregated per country-year (set EDGAR_XLSX_PATH or place file at `reference/EDGAR_emiss_on_UCDB_2024.xlsx`)
 
+## Integrasi Data CAMPD
+
+Proyek ini terintegrasi dengan [Clean Air Markets Program Data (CAMPD)](https://www.epa.gov/airmarkets) untuk memperkaya Skor Verifikasi Lingkungan Komprehensif (CEVS) dengan data emisi dan kepatuhan dari pembangkit listrik di AS.
+
+### Konfigurasi
+
+Untuk mengaktifkan integrasi ini, Anda memerlukan API key dari CAMPD. Tambahkan kunci Anda ke file `.env` Anda:
 CEVS pollution trend source selection: set `CEVS_POLLUTION_SOURCE` to `auto` (default), `eea`, or `edgar`.
 
 ## ✅ Current Status

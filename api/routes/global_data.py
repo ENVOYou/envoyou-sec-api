@@ -12,6 +12,8 @@ from api.utils import cache as cache_util
 from api.clients.iso_client import ISOClient
 from api.clients.eea_client import EEAClient
 from api.clients.edgar_client import EDGARClient
+# --- PERUBAHAN 1: Impor CAMDClient ---
+from api.clients.campd_client import CAMDClient
 from api.services.cevs_aggregator import compute_cevs_for_company
 
 
@@ -364,6 +366,67 @@ def global_cevs(company_name: str):
 	except Exception as e:
 		logger.error(f"Error in /global/cevs/{company_name}: {e}")
 		return jsonify({"status": "error", "message": str(e)}), 500
+
+# --- PERUBAHAN 2: Tambahkan endpoint baru untuk CAMPD ---
+@global_bp.route('/global/campd', methods=['GET'])
+@swag_from({
+    'tags': ['Global Data'],
+    'summary': 'Get Raw CAMPD Data',
+    'description': 'Retrieves raw emissions and compliance data from the CAMPD API for a given facility. Requires API key authentication.',
+    'security': [{'ApiKeyAuth': []}],
+    'parameters': [
+        {
+            'name': 'facility_id',
+            'in': 'query',
+            'type': 'integer',
+            'required': True,
+            'description': 'The facility ID from CAMPD (e.g., 7 for Tennessee Valley Authority).',
+            'example': 7
+        }
+    ],
+    'responses': {
+        200: {
+            'description': 'Successful response with CAMPD data.',
+            'schema': {
+                'type': 'object',
+                'properties': {
+                    'status': {'type': 'string'},
+                    'emissions': {'type': 'object'},
+                    'compliance': {'type': 'object'}
+                }
+            }
+        },
+        400: {
+            'description': 'Missing or invalid facility_id parameter.'
+        },
+        500: {
+            'description': 'Error fetching data from CAMPD API.'
+        }
+    }
+})
+def get_campd_data():
+    """
+    Endpoint to retrieve raw data from the CAMPD API for a given facility.
+    """
+    facility_id_str = request.args.get('facility_id')
+    if not facility_id_str or not facility_id_str.isdigit():
+        return jsonify({"status": "error", "message": "A valid facility_id parameter is required"}), 400
+
+    try:
+        facility_id = int(facility_id_str)
+        client = CAMDClient()
+        emissions = client.get_emissions_data(facility_id)
+        compliance = client.get_compliance_data(facility_id)
+        
+        return jsonify({
+            "status": "success",
+            "emissions": emissions,
+            "compliance": compliance,
+            "retrieved_at": datetime.now().isoformat(),
+        })
+    except Exception as e:
+        logger.error(f"Error in /global/campd: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
 
 
 __all__ = ["global_bp"]
