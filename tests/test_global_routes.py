@@ -7,6 +7,7 @@ from __future__ import annotations
 import os
 import pytest
 from flask import Flask
+from unittest.mock import patch
 from api.api_server import app as flask_app
 
 
@@ -165,3 +166,39 @@ class TestGlobalRoutes:
         trend = data["trend"]
         assert "pollutant" in trend
         assert trend["pollutant"] == "NOx"
+
+    # --- Test Case Baru untuk Endpoint CAMPD ---
+
+    @patch('api.routes.global_data.CAMDClient')
+    def test_global_campd_success(self, MockCAMDClient, client, auth_headers):
+        """Test /global/campd returns 200 with valid facility_id."""
+        # Siapkan mock untuk mengembalikan data contoh
+        mock_instance = MockCAMDClient.return_value
+        mock_instance.get_emissions_data.return_value = [{"year": 2023, "co2Mass": 5000}]
+        mock_instance.get_compliance_data.return_value = [{"year": 2023, "compliantIndicator": 1}]
+
+        resp = client.get("/global/campd?facility_id=123", headers=auth_headers)
+        
+        assert resp.status_code == 200
+        data = resp.get_json()
+        assert data["status"] == "success"
+        assert "emissions" in data
+        assert "compliance" in data
+        assert data["emissions"][0]["co2Mass"] == 5000
+        assert data["compliance"][0]["compliantIndicator"] == 1
+
+    def test_global_campd_missing_param(self, client, auth_headers):
+        """Test /global/campd returns 400 if facility_id is missing."""
+        resp = client.get("/global/campd", headers=auth_headers)
+        assert resp.status_code == 400
+        data = resp.get_json()
+        assert data["status"] == "error"
+        assert "facility_id parameter is required" in data["message"]
+
+    def test_global_campd_invalid_param(self, client, auth_headers):
+        """Test /global/campd returns 400 if facility_id is not a number."""
+        resp = client.get("/global/campd?facility_id=abc", headers=auth_headers)
+        assert resp.status_code == 400
+        data = resp.get_json()
+        assert data["status"] == "error"
+        assert "A valid facility_id parameter is required" in data["message"]

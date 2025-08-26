@@ -258,6 +258,36 @@ Mengekspos data mentah dari API CAMPD untuk fasilitas tertentu.
 ```bash
 curl -X GET "http://localhost:5000/global/campd?facility_id=12345"
 
+**2. Buat *Test Case* Baru**
+
+Tambahkan *test case* baru di `tests/test_cevs.py` dan `tests/test_global_routes.py`.
+
+**Di `tests/test_cevs.py`:**
+```python
+import pytest
+from unittest.mock import patch, MagicMock
+from api.services.cevs_aggregator import compute_cevs_for_company
+
+# (Test case yang ada tetap di sini)
+
+@patch('api.services.cevs_aggregator.CAMDClient')
+def test_compute_cevs_with_campd_data(MockCAMDClient):
+    """
+    Test CEVS computation with mocked CAMPD data.
+    """
+    # Siapkan mock untuk data emisi dan kepatuhan
+    mock_client = MockCAMDClient.return_value
+    mock_client.get_emissions_data.return_value = [{'co2Mass': 2000000}]
+    mock_client.get_compliance_data.return_value = [{'compliantIndicator': False}]
+
+    # Panggil fungsi dengan nama perusahaan yang ada di dalam facility_id_map
+    result = compute_cevs_for_company("Example Power Plant Inc.", "US")
+
+    # Periksa apakah skor disesuaikan dengan benar
+    assert result['cevs_score'] == -50  # -20 untuk emisi, -30 untuk kepatuhan
+    assert 'campd_emissions' in result['components']
+    assert 'campd_compliance' in result['components']
+
 #### 8. CEVS Composite Score
 **GET** `/global/cevs/<company>`
 
