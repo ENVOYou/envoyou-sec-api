@@ -1,32 +1,66 @@
-from fastapi import APIRouter, Query, Depends, HTTPException
-from typing import Optional, List
+from fastapi import APIRouter, Depends, HTTPException, status
+from typing import List
 from app.models.permit import Permit
+from app.models.permit_search import PermitSearchParams
 from app.data.mock_permits import mock_permits
 
 router = APIRouter()
 
-def check_params(
-    nama: Optional[str] = Query(None),
-    jenis: Optional[str] = Query(None),
-    status: Optional[str] = Query(None)
-):
-    if not any([nama, jenis, status]):
-        raise HTTPException(400, "At least one search parameter required")
-    return {"nama": nama, "jenis": jenis, "status": status}
+@router.get("/", response_model=dict)
+async def get_all_permits():
+    """Endpoint untuk mendapatkan semua permits dengan response format standar"""
+    return {"status": "success", "data": mock_permits}
+
+@router.get("/{permit_id}", response_model=dict)
+async def get_permit_by_id(permit_id: int):
+    for permit in mock_permits:
+        if permit["id"] == permit_id:
+            return {"status": "success", "data": permit}
+    raise HTTPException(status_code=404, detail="Permit not found")
+
+@router.get("/active", response_model=dict)
+async def get_active_permits():
+    active = [p for p in mock_permits if p["status"].lower() == "aktif"]
+    return {"status": "success", "data": active}
+
+@router.get("/stats", response_model=dict)
+async def get_permits_stats():
+    total = len(mock_permits)
+    active_count = len([p for p in mock_permits if p["status"].lower() == "aktif"])
+    inactive_count = total - active_count
+    stats = {
+        "total_permits": total,
+        "active_permits": active_count,
+        "inactive_permits": inactive_count
+    }
+    return {"status": "success", "data": stats}
+
+@router.get("/company/{company_name}", response_model=dict)
+async def get_permits_by_company(company_name: str):
+    results = [p for p in mock_permits if company_name.lower() in p["company_name"].lower()]
+    if not results:
+        raise HTTPException(status_code=404, detail="Company not found")
+    return {"status": "success", "data": results}
+
+@router.get("/type/{permit_type}", response_model=dict)
+async def get_permits_by_type(permit_type: str):
+    results = [p for p in mock_permits if permit_type.lower() in p["permit_type"].lower()]
+    if not results:
+        raise HTTPException(status_code=404, detail="Permit type not found")
+    return {"status": "success", "data": results}
 
 @router.get("/search", response_model=List[Permit])
-async def search_permits(params: dict = Depends(check_params)):
-    nama = params["nama"]
-    jenis = params["jenis"]
-    status = params["status"]
-
+async def search_permits(params: PermitSearchParams = Depends()):
+    if params.is_empty():
+        raise HTTPException(status_code=400, detail="At least one search parameter required (nama, jenis, or status)")
     results = []
     for permit in mock_permits:
-        if nama and nama.lower() not in permit["company_name"].lower():
+        if params.nama and params.nama.lower() not in permit["company_name"].lower():
             continue
-        if jenis and jenis.lower() not in permit["permit_type"].lower():
+        if params.jenis and params.jenis.lower() not in permit["permit_type"].lower():
             continue
-        if status and status.lower() not in permit["status"].lower():
+        if params.status and params.status.lower() not in permit["status"].lower():
             continue
         results.append(permit)
-    return results
+    return {"status": "success", "data": results}
+
