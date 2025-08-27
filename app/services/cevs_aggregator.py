@@ -4,13 +4,13 @@ import logging
 from typing import Any, Dict, List, Optional
 import os
 
-from api.clients.global_client import KLHKClient as EPAClient
-from api.clients.iso_client import ISOClient
-from api.clients.eea_client import EEAClient
-from api.clients.edgar_client import EDGARClient
+from app.clients.global_client import KLHKClient as EPAClient
+from app.clients.iso_client import ISOClient
+from app.clients.eea_client import EEAClient
+from app.clients.edgar_client import EDGARClient
 # --- PERUBAHAN 1: Impor CAMDClient ---
-from api.clients.campd_client import CAMDClient
-from api.utils.policy import load_best_practices, practices_for_country
+from app.clients.campd_client import CAMDClient
+from app.utils.policy import load_best_practices, practices_for_country
 
 logger = logging.getLogger(__name__)
 

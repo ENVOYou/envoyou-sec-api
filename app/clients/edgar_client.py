@@ -7,7 +7,7 @@ from functools import lru_cache
 
 from openpyxl import load_workbook  # type: ignore
 
-from api.utils.mappings import normalize_country_name
+from app.utils.mappings import normalize_country_name
 
 logger = logging.getLogger(__name__)
 

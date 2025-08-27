@@ -4,8 +4,8 @@ from datetime import datetime
 import urllib.parse
 import logging
 
-from api.clients.global_client import KLHKClient
-from api.utils import cache as cache_util
+from app.clients.global_client import KLHKClient
+from app.utils import cache as cache_util
 
 router = APIRouter()
 logger = logging.getLogger(__name__)

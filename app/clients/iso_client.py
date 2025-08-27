@@ -10,8 +10,8 @@ from functools import lru_cache
 import requests
 from openpyxl import load_workbook
 
-from api.utils.schema import ensure_iso_cert_schema
-from api.utils.mappings import normalize_country_name
+from app.utils.schema import ensure_iso_cert_schema
+from app.utils.mappings import normalize_country_name
 
 logger = logging.getLogger(__name__)
 

@@ -14,7 +14,7 @@ from typing import Any, Dict, List, Optional
 
 import requests
 
-from api.utils.schema import ensure_epa_emission_schema
+from app.utils.schema import ensure_epa_emission_schema
 
 logger = logging.getLogger(__name__)
 
@@ -157,3 +157,4 @@ class EPAClient:
 KLHKClient = EPAClient
 
 __all__ = ["KLHKClient", "EPAClient"]
+

@@ -8,7 +8,7 @@ import requests
 import pandas as pd
 from functools import lru_cache
 
-from api.utils.mappings import normalize_country_name
+from app.utils.mappings import normalize_country_name
 
 # Pastikan Anda telah menambahkan 'pyarrow' ke requirements.txt
 # pip install pyarrow

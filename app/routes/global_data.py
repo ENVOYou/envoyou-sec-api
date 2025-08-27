@@ -5,18 +5,14 @@ import logging
 from typing import Any, Dict, List, Optional
 import os
 
-from api.clients.global_client import KLHKClient
-from api.utils import cache as cache_util
-from api.clients.iso_client import ISOClient
-from api.clients.eea_client import EEAClient
-from api.clients.edgar_client import EDGARClient
-from api.clients.campd_client import CAMDClient
-from api.services.cevs_aggregator import compute_cevs_for_company
-
-# NOTE: You may need to implement require_api_key dependency for authentication
-def require_api_key():
-    # Dummy implementation placeholder. Replace with actual logic!
-	return True
+from app.clients.global_client import KLHKClient
+from app.utils import cache as cache_util
+from app.clients.iso_client import ISOClient
+from app.clients.eea_client import EEAClient
+from app.clients.edgar_client import EDGARClient
+from app.clients.campd_client import CAMDClient
+from app.services.cevs_aggregator import compute_cevs_for_company
+from app.utils.security import require_api_key
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -25,11 +21,11 @@ logger = logging.getLogger(__name__)
 def _fetch_and_normalize() -> List[Dict[str, Any]]:
     """Fetch fresh EPA emissions data and normalize to our schema."""
     logger.info("Fetching fresh EPA emissions data (global route)")
-			client = KLHKClient()
-	try:
+    client = KLHKClient()
+    try:
         raw = client.get_status_sk(plain=False)
         data = raw if (raw and isinstance(raw, list)) else client.create_sample_data()
-	except Exception as e:
+    except Exception as e:
         logger.error(f"Error fetching EPA data: {e}")
         data = client.create_sample_data()
 
@@ -61,7 +57,7 @@ def _matches_filters(item: Dict[str, Any], *, state: Optional[str], year: Option
         if pollutant.lower() not in pol.lower():
             return False
 
-	return True
+    return True
 
 
 @router.get("/global/emissions", dependencies=[Depends(require_api_key)])
@@ -73,7 +69,7 @@ async def global_emissions(
     limit: int = 50
 ):
     """EPA power plant emissions with optional filters and pagination."""
-	try:
+    try:
         if page < 1:
             page = 1
         if limit < 1 or limit > 100:
@@ -94,7 +90,7 @@ async def global_emissions(
         paginated = filtered[start_idx:end_idx]
 
         return JSONResponse(content={
-			"status": "success",
+            "status": "success",
             "data": paginated,
             "filters": {"state": state, "year": year, "pollutant": pollutant},
             "pagination": {
@@ -104,13 +100,13 @@ async def global_emissions(
                 "total_pages": (len(filtered) + limit - 1) // limit,
                 "has_next": end_idx < len(filtered),
                 "has_prev": page > 1,
-        },
+            },
             "retrieved_at": datetime.now().isoformat(),
         })
 
     except Exception as e:
         logger.error(f"Error in /global/emissions: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        return JSONResponse(content={"status": "error", "message": str(e)}, status_code=500)
 
 
 @router.get("/global/emissions/stats", dependencies=[Depends(require_api_key)])
@@ -146,7 +142,7 @@ async def global_emissions_stats():
 
     except Exception as e:
         logger.error(f"Error in /global/emissions/stats: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        return JSONResponse(content={"status": "error", "message": str(e)}, status_code=500)
 
 
 @router.get("/global/iso", dependencies=[Depends(require_api_key)])
@@ -165,7 +161,7 @@ async def global_iso(
         })
     except Exception as e:
         logger.error(f"Error in /global/iso: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        return JSONResponse(content={"status": "error", "message": str(e)}, status_code=500)
 
 
 @router.get("/global/eea", dependencies=[Depends(require_api_key)])
@@ -186,7 +182,7 @@ async def global_eea(
         })
     except Exception as e:
         logger.error(f"Error in /global/eea: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        return JSONResponse(content={"status": "error", "message": str(e)}, status_code=500)
 
 
 @router.get("/global/edgar", dependencies=[Depends(require_api_key)])
@@ -218,7 +214,7 @@ async def global_edgar(
         })
     except Exception as e:
         logger.error(f"Error in /global/edgar: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        return JSONResponse(content={"status": "error", "message": str(e)}, status_code=500)
 
 
 @router.get("/global/cevs/{company_name}", dependencies=[Depends(require_api_key)])
@@ -240,19 +236,18 @@ async def global_cevs(
         })
     except Exception as e:
         logger.error(f"Error in /global/cevs/{company_name}: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        return JSONResponse(content={"status": "error", "message": str(e)}, status_code=500)
 
 
 @router.get("/global/campd", dependencies=[Depends(require_api_key)])
 async def get_campd_data(
     facility_id: int
 ):
-    """Endpoint to retrieve raw data from the CAMPD API for a given facility."""
     try:
         client = CAMDClient()
         emissions = client.get_emissions_data(facility_id)
         compliance = client.get_compliance_data(facility_id)
-
+        
         return JSONResponse(content={
             "status": "success",
             "emissions": emissions,
@@ -261,8 +256,7 @@ async def get_campd_data(
         })
     except Exception as e:
         logger.error(f"Error in /global/campd: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        return JSONResponse(content={"status": "error", "message": str(e)}, status_code=500)
 
 
 __all__ = ["router"]
-

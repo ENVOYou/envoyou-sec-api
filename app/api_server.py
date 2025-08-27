@@ -12,13 +12,13 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Import blueprints as routers for FastAPI
-from api.routes import health_router
-from api.routes.permits import router as permits_router
-from api.routes.global_data import router as global_router
-from api.routes.admin import router as admin_router
+from app.routes import health_router
+from app.routes.permits import router as permits_router
+from app.routes.global_data import router as global_router
+from app.routes.admin import router as admin_router
 
 # Import security utilities
-from api.utils.security import setup_rate_limiting, is_public_endpoint, validate_api_key
+from app.utils.security import setup_rate_limiting, is_public_endpoint, validate_api_key
 
 app = FastAPI(
     title="Environmental Data Verification API",
