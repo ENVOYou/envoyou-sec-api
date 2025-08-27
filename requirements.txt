@@ -16,3 +16,5 @@ gunicorn==21.2.0
 numpy==1.26.0
 flasgger==0.9.7.1
 slowapi==0.1.9
+fastapi==0.95.1
+uvicorn==0.22.0
