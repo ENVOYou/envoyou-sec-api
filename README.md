@@ -250,4 +250,4 @@ Author
 Husni Kusuma (hk-dev13)
 Fokus pada Web3, AI, dan Quantum Computing.
 
-Made with ❤️ for data transparency
+Made with ❤️ for data transparency.
