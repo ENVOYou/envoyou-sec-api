@@ -6,24 +6,24 @@ from app.data.mock_permits import mock_permits
 
 router = APIRouter()
 
-@router.get("/", response_model=dict)
+@router.get("")
 async def get_all_permits():
     """Endpoint untuk mendapatkan semua permits dengan response format standar"""
     return {"status": "success", "data": mock_permits}
 
-@router.get("/{permit_id}", response_model=dict)
+@router.get("/{permit_id}")
 async def get_permit_by_id(permit_id: int):
     for permit in mock_permits:
         if permit["id"] == permit_id:
             return {"status": "success", "data": permit}
     raise HTTPException(status_code=404, detail="Permit not found")
 
-@router.get("/active", response_model=dict)
+@router.get("/active")
 async def get_active_permits():
     active = [p for p in mock_permits if p["status"].lower() == "aktif"]
     return {"status": "success", "data": active}
 
-@router.get("/stats", response_model=dict)
+@router.get("/stats")
 async def get_permits_stats():
     total = len(mock_permits)
     active_count = len([p for p in mock_permits if p["status"].lower() == "aktif"])
@@ -35,23 +35,23 @@ async def get_permits_stats():
     }
     return {"status": "success", "data": stats}
 
-@router.get("/company/{company_name}", response_model=dict)
+@router.get("/company/{company_name}")
 async def get_permits_by_company(company_name: str):
     results = [p for p in mock_permits if company_name.lower() in p["company_name"].lower()]
     if not results:
         raise HTTPException(status_code=404, detail="Company not found")
     return {"status": "success", "data": results}
 
-@router.get("/type/{permit_type}", response_model=dict)
+@router.get("/type/{permit_type}")
 async def get_permits_by_type(permit_type: str):
     results = [p for p in mock_permits if permit_type.lower() in p["permit_type"].lower()]
     if not results:
         raise HTTPException(status_code=404, detail="Permit type not found")
     return {"status": "success", "data": results}
 
-@router.get("/search", response_model=List[Permit])
+@router.get("/search")
 async def search_permits(params: PermitSearchParams = Depends()):
-    if params.is_empty():
+    if not (params.nama or params.jenis or params.status):
         raise HTTPException(status_code=400, detail="At least one search parameter required (nama, jenis, or status)")
     results = []
     for permit in mock_permits:

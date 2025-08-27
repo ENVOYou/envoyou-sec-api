@@ -2,11 +2,11 @@ from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 import os
 import sys
-from datetime import datetime
+from datetime import datetime, timezone
 
 router = APIRouter()
 
-@router.get("/health", tags=["Health"], summary="Health Check Endpoint")
+@router.get("", tags=["Health"], summary="Health Check Endpoint")
 async def health_check():
     """
     Comprehensive health check for AWS App Runner and monitoring.
@@ -18,7 +18,7 @@ async def health_check():
         "status": "success",
         "data": {
             "status": "healthy",
-            "timestamp": datetime.utcnow().isoformat() + "Z",
+            "timestamp": datetime.now(timezone.utc).isoformat(),
             "version": "1.0.0",
             "environment": os.getenv("FASTAPI_ENV", "development"),
             "python_version": sys.version.split()[0],
