@@ -2,14 +2,12 @@ from fastapi import FastAPI, Request, HTTPException, status, Depends
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
-from fastapi.openapi.utils import get_openapi
-from fastapi.staticfiles import StaticFiles
+from fastapi.openapi.utils import get_openapi # Keep this for custom_openapi
 import logging
 import os
-from dotenv import load_dotenv
+from app.config import settings # Import settings object
 
 # Load environment variables
-load_dotenv()
 
 # Import blueprints as routers for FastAPI
 from app.routes import health_router
@@ -18,7 +16,7 @@ from app.routes.global_data import router as global_router
 from app.routes.admin import router as admin_router
 
 # Import security utilities
-from app.utils.security import setup_rate_limiting, is_public_endpoint, validate_api_key
+from app.utils.security import is_public_endpoint, validate_api_key, rate_limit_dependency_factory
 
 app = FastAPI(
     title="Environmental Data Verification API",
@@ -32,27 +30,27 @@ app = FastAPI(
 )
 
 # CORS
-cors_origins = os.getenv("CORS_ORIGINS", "*")
+cors_origins = settings.CORS_ORIGINS # Use settings for CORS origins
 if cors_origins != '*' and isinstance(cors_origins, str):
     cors_origins = [origin.strip() for origin in cors_origins.split(",")]
 else:
     cors_origins = ["*"]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=cors_origins,
+    allow_origins=cors_origins, # Use the parsed origins
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["Content-Type", "Authorization", "X-API-Key"],
 )
 
 # GZIP for response compression
-app.add_middleware(GZipMiddleware, minimum_size=1000)
+app.add_middleware(GZipMiddleware, minimum_size=1000) # Keep this as is
 
 # Logging
-log_level = getattr(logging, os.getenv('LOG_LEVEL', 'INFO').upper(), logging.INFO)
+log_level = getattr(logging, settings.LOG_LEVEL.upper(), logging.INFO) # Use settings.LOG_LEVEL
 log_handlers = []
-if os.getenv('LOG_FILE'):
-    log_handlers.append(logging.FileHandler(os.getenv('LOG_FILE'), mode='a'))
+if settings.LOG_FILE: # Use settings for LOG_FILE
+    log_handlers.append(logging.FileHandler(settings.LOG_FILE, mode='a'))
 log_handlers.append(logging.StreamHandler())
 logging.basicConfig(
     level=log_level,
@@ -60,9 +58,6 @@ logging.basicConfig(
     handlers=log_handlers
 )
 logger = logging.getLogger(__name__)
-
-# Mount static files for docs if needed
-app.mount("/flasgger_static", StaticFiles(directory="flasgger_static"), name="flasgger_static")
 
 async def api_key_dependency(request: Request):
     public_paths = [
@@ -132,17 +127,19 @@ def custom_openapi():
 app.openapi = custom_openapi
 
 # Register routers
-app.include_router(health_router)
-app.include_router(permits_router, prefix="")
-app.include_router(global_router, prefix="", dependencies=[Depends(api_key_dependency)])
-app.include_router(admin_router, prefix="")
+app.include_router(health_router, prefix="/health")
+app.include_router(permits_router, prefix="/permits")
+# Terapkan dependensi API key dan rate limiting ke semua rute global
+rate_limiter = rate_limit_dependency_factory()
+app.include_router(global_router, prefix="/global", dependencies=[Depends(api_key_dependency), Depends(rate_limiter)])
+app.include_router(admin_router, prefix="/admin")
 
 @app.get("/", tags=["Health"])
 async def home():
     api_info = {
-        'name': 'KLHK Permit API Proxy',
+        'name': 'Environmental Data Verification API',
         'version': '1.0.0',
-        'description': 'API proxy untuk mengakses data perizinan PTSP MENLHK',
+        'description': 'Production API for environmental data verification and compliance checking with multi-source data integration',
         'endpoints': {
             '/': 'API information',
             '/health': 'Health check',
@@ -200,9 +197,9 @@ async def internal_error(request: Request, exc):
 
 @app.on_event("startup")
 async def print_startup_info():
-    port = int(os.environ.get('PORT', 8000))
+    port = settings.PORT # Use settings for port
     print("="*60)
-    print("🚀 KLHK Permit API Proxy Server")
+    print("🚀 Environmental Data Verification API Server")
     print("="*60)
     print(f"Server would start on http://localhost:{port}")
     print("Available endpoints:")
@@ -215,4 +212,3 @@ async def print_startup_info():
     print("  GET  /permits/type/<type>  - Get permits by type")
     print("  GET  /permits/stats        - Get permit statistics")
     print("="*60)
-

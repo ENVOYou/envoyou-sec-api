@@ -5,7 +5,7 @@ import logging
 from typing import Any, Dict, List, Optional
 import os
 
-from app.clients.global_client import KLHKClient
+from app.clients.global_client import EPAClient
 from app.utils import cache as cache_util
 from app.clients.iso_client import ISOClient
 from app.clients.eea_client import EEAClient
@@ -21,15 +21,14 @@ logger = logging.getLogger(__name__)
 def _fetch_and_normalize() -> List[Dict[str, Any]]:
     """Fetch fresh EPA emissions data and normalize to our schema."""
     logger.info("Fetching fresh EPA emissions data (global route)")
-    client = KLHKClient()
+    client = EPAClient()
     try:
-        raw = client.get_status_sk(plain=False)
-        data = raw if (raw and isinstance(raw, list)) else client.create_sample_data()
+        # Fetch a decent number of records for caching
+        raw_data = client.get_emissions_data(limit=500)
     except Exception as e:
         logger.error(f"Error fetching EPA data: {e}")
-        data = client.create_sample_data()
-
-    normalized = client.format_permit_data(data)
+        raw_data = client.create_sample_data()
+    normalized = client.format_emission_data(raw_data)
     return normalized
 
 
@@ -40,21 +39,25 @@ def _get_cached_data() -> List[Dict[str, Any]]:
 
 
 def _matches_filters(item: Dict[str, Any], *, state: Optional[str], year: Optional[int], pollutant: Optional[str]) -> bool:
-    if state:
-        extras = item.get("extras", {})
-        raw = extras.get("raw", {})
-        st = str(extras.get("state") or raw.get("state") or raw.get("state_name") or "")
-        if st.lower() != state.lower():
-            return False
+    logger.debug(f"Checking item: {item.get('facility_name')}, state: {item.get('state')}, year: {item.get('year')}, pollutant: {item.get('pollutant')}")
+    logger.debug(f"Filters: state={state}, year={year}, pollutant={pollutant}")
 
+    # State filtering is primarily handled by the API call, but this is a good safeguard.
+    if state and str(item.get("state") or "").lower() != state.lower():
+        logger.debug(f"State mismatch: {item.get('state')} vs {state}")
+        return False
+
+    # The EPA Envirofacts API used doesn't filter by year, so we do it here.
     if year is not None:
-        y = item.get("tanggal_berlaku")
-        if str(y) != str(year):
+        # The schema normalizer might set a default year.
+        if item.get("year") != year:
+            logger.debug(f"Year mismatch: {item.get('year')} vs {year}")
             return False
 
+    # The EPA Envirofacts API used doesn't filter by pollutant, so we do it here.
     if pollutant:
-        pol = str(item.get("judul_kegiatan") or "")
-        if pollutant.lower() not in pol.lower():
+        if pollutant.lower() not in str(item.get("pollutant") or "").lower():
+            logger.debug(f"Pollutant mismatch: {item.get('pollutant')} vs {pollutant}")
             return False
 
     return True
@@ -70,35 +73,49 @@ async def global_emissions(
 ):
     """EPA power plant emissions with optional filters and pagination."""
     try:
+        # Validasi parameter paginasi
         if page < 1:
             page = 1
         if limit < 1 or limit > 100:
             limit = 50
 
-        if state or year is not None or pollutant:
-            client = KLHKClient()
-            end_idx = max(0, (page - 1) * limit + limit)
-            raw = client.get_emissions_power_plants(state=state, limit=end_idx)
-            data = client.format_permit_data(raw)
-            filtered = [d for d in data if _matches_filters(d, state=state, year=year, pollutant=pollutant)]
+        # Langkah 1: Dapatkan dataset dasar
+        # Jika ada filter 'state', kita harus mengambil data baru yang relevan.
+        # Jika tidak, kita bisa menggunakan cache umum yang lebih cepat.
+        source_data: List[Dict[str, Any]]
+        if state:
+            client = EPAClient()
+            # Ambil sejumlah besar data untuk memungkinkan pemfilteran dan paginasi yang akurat
+            raw_data = client.get_emissions_data(region=state, limit=1000)
+            logger.debug(f"Raw data from EPAClient for state={state}: {len(raw_data)} records")
+            source_data = client.format_emission_data(raw_data)
+            logger.debug(f"Source data after format_emission_data: {len(source_data)} records")
         else:
-            data = _get_cached_data()
-            filtered = [d for d in data if _matches_filters(d, state=state, year=year, pollutant=pollutant)]
+            source_data = _get_cached_data()
+            logger.debug(f"Source data from cache: {len(source_data)} records")
 
+        # Langkah 2: Terapkan semua filter ke dataset yang kita miliki
+        filtered_data = [
+            d for d in source_data if _matches_filters(d, state=state, year=year, pollutant=pollutant)
+        ]
+        logger.debug(f"Filtered data after _matches_filters: {len(filtered_data)} records")
+
+        # Langkah 3: Lakukan paginasi pada hasil yang sudah difilter
+        total_records = len(filtered_data)
         start_idx = (page - 1) * limit
         end_idx = start_idx + limit
-        paginated = filtered[start_idx:end_idx]
+        paginated_data = filtered_data[start_idx:end_idx]
 
         return JSONResponse(content={
             "status": "success",
-            "data": paginated,
+            "data": paginated_data,
             "filters": {"state": state, "year": year, "pollutant": pollutant},
             "pagination": {
                 "page": page,
                 "limit": limit,
-                "total_records": len(filtered),
-                "total_pages": (len(filtered) + limit - 1) // limit,
-                "has_next": end_idx < len(filtered),
+                "total_records": total_records,
+                "total_pages": (total_records + limit - 1) // limit if limit > 0 else 0,
+                "has_next": end_idx < total_records,
                 "has_prev": page > 1,
             },
             "retrieved_at": datetime.now().isoformat(),
@@ -120,10 +137,10 @@ async def global_emissions_stats():
         by_year: Dict[str, int] = {}
 
         for item in data:
-            raw = (item.get("extras") or {}).get("raw", {})
-            state = str(raw.get("state") or raw.get("state_name") or "Unknown")
-            pol = str(item.get("judul_kegiatan") or "Unknown")
-            year = str(item.get("tanggal_berlaku") or "Unknown")
+            # Use fields from the normalized EPA schema
+            state = str(item.get("state") or "Unknown")
+            pol = str(item.get("pollutant") or "Unknown")
+            year = str(item.get("year") or "Unknown")
 
             by_state[state] = by_state.get(state, 0) + 1
             by_pollutant[pol] = by_pollutant.get(pol, 0) + 1

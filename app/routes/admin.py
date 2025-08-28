@@ -15,7 +15,7 @@ from app.utils.security import (
     VALID_API_KEYS
 )
 
-router = APIRouter(prefix="/admin")
+router = APIRouter()
 logger = logging.getLogger(__name__)
 
 @router.get("/api-keys", dependencies=[Depends(require_api_key)])
@@ -108,4 +108,3 @@ async def api_stats(request: Request):
     })
 
 __all__ = ["router"]
-

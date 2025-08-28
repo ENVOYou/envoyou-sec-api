@@ -4,7 +4,7 @@ import logging
 from typing import Any, Dict, List, Optional
 import os
 
-from app.clients.global_client import KLHKClient as EPAClient
+from app.clients.global_client import EPAClient
 from app.clients.iso_client import ISOClient
 from app.clients.eea_client import EEAClient
 from app.clients.edgar_client import EDGARClient
@@ -18,6 +18,18 @@ logger = logging.getLogger(__name__)
 def _normalize_name(name: Optional[str]) -> str:
     return (name or "").strip().lower()
 
+
+def _search_epa_by_company(company_name: str, data: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """Helper untuk mencari data EPA yang sudah dinormalisasi berdasarkan nama perusahaan/fasilitas."""
+    if not data:
+        return []
+    term = company_name.lower()
+    results: List[Dict[str, Any]] = []
+    for rec in data:
+        # Cari di dalam field 'facility_name' yang sudah dinormalisasi
+        if term in str(rec.get("facility_name") or "").lower():
+            results.append(rec)
+    return results
 
 def compute_cevs_for_company(company_name: str, *, company_country: Optional[str] = None) -> Dict[str, Any]:
     """Compute a simple CEVS score by combining EPA, ISO, and EEA data.
@@ -48,11 +60,11 @@ def compute_cevs_for_company(company_name: str, *, company_country: Optional[str
     epa_client = EPAClient()
     # Try a short-timeout EPA fetch for responsiveness
     try:
-        epa_records_raw = epa_client.get_emissions_power_plants(limit=200, timeout=5.0)
+        epa_records_raw = epa_client.get_emissions_data(limit=200, timeout=5.0)
     except Exception:
         epa_records_raw = epa_client.create_sample_data()
-    epa_norm = epa_client.format_permit_data(epa_records_raw)
-    epa_matches = epa_client.search_permits_by_company(company_name, epa_norm)
+    epa_norm = epa_client.format_emission_data(epa_records_raw)
+    epa_matches = _search_epa_by_company(company_name, epa_norm)
 
     # ISO: sample-backed; filter by country if provided, and by company name contains
     iso_client = ISOClient()

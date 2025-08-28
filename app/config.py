@@ -18,8 +18,8 @@ class Settings(BaseSettings):
 
     # Pengaturan Aplikasi Umum
     APP_NAME: str = "Environmental Data Verification API"
-    ENVIRONMENT: str = "development"
-    LOG_LEVEL: str = "INFO"
+    ENVIRONMENT: str = "development" # Or "production"
+    LOG_LEVEL: str = "DEBUG" # Set to DEBUG for detailed logs
     GITHUB_REPO_URL: str = "https://github.com/hk-dev13"
 
     # Konfigurasi API Eksternal

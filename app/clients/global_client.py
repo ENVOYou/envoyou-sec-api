@@ -1,23 +1,23 @@
 """
 EPA Envirofacts Client
 
-Implementasi klien untuk mengambil data fasilitas dari EPA Envirofacts API.
-Data ini digunakan sebagai proksi untuk informasi emisi.
+Implementasi klien untuk mengambil data fasilitas dari EPA Envirofacts API (tri_facility).
+Data ini digunakan sebagai proksi untuk informasi emisi, dengan normalisasi tambahan.
 """
 from __future__ import annotations
-
-import os
-import logging
 from typing import Any, Dict, List, Optional
+import logging
 
 import requests
 
+from app.config import settings
+from app.clients.base import BaseDataClient
 from app.utils.schema import ensure_epa_emission_schema
 
 logger = logging.getLogger(__name__)
 
 
-class EPAClient:
+class EPAClient(BaseDataClient):
 	"""
 	Klien untuk EPA Envirofacts API.
 
@@ -27,14 +27,12 @@ class EPAClient:
 	def __init__(self) -> None:
 		# Envirofacts efservice base (documented)
 		# Format: https://data.epa.gov/efservice/<Table>/<Column>/<Operator>/<Value>/rows/0:n/JSON
-		self.env_base = os.getenv("EPA_ENV_BASE", "https://data.epa.gov/efservice/").rstrip("/") + "/"
-		# Default table: use TRI facility for a stable, public dataset
-		# You can override with EPA_ENV_TABLE (e.g., tri_facility, tri_release)
-		self.env_table = os.getenv("EPA_ENV_TABLE", "tri_facility").strip("/")
+		self.env_base = settings.EPA_ENV_BASE.rstrip("/") + "/"
+		self.env_table = settings.EPA_ENV_TABLE.strip("/")
 		self.session = requests.Session()
 		self.session.headers.update({
 			"Accept": "application/json",
-			"User-Agent": "project-permit-api/1.0 (+https://github.com/hk-dev13)"
+			"User-Agent": f"project-permit-api/1.0 (+{settings.GITHUB_REPO_URL})"
 		})
 
 	def format_emission_data(self, data: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
@@ -70,8 +68,19 @@ class EPAClient:
 			}
 		]
 
-	# --- EPA-specific helpers ---
-	def get_facilities_by_state(
+	# --- Implementation of BaseDataClient interface ---
+	def get_emissions_data(
+		self,
+		*,
+		region: Optional[str] = None,
+		year: Optional[int] = None,
+		limit: int = 100,
+		**kwargs: Any,
+	) -> List[Dict[str, Any]]:
+		"""Mengambil data emisi dari EPA Envirofacts. `region` dipetakan ke `state`."""
+		return self._get_facilities_by_state(state=region, year=year, limit=limit, **kwargs)
+
+	def _get_facilities_by_state(
 		self,
 		*,
 		state: Optional[str] = None,
@@ -91,8 +100,8 @@ class EPAClient:
 		"""
 		# Bangun path sesuai format efservice
 		segments: List[str] = [self.env_table]
-		if state:
-			segments.extend(["state_abbr", state])
+		if state: # Gunakan nama kolom yang benar sesuai dokumentasi EPA (case-sensitive)
+			segments.extend(["STATE_ABBR", state])
 		# TRI facility tidak menyediakan kolom 'year' langsung; abaikan jika diberikan
 		# Pembatasan baris (0-indexed, inclusive)
 		end_row = max(0, (limit or 100) - 1)
@@ -107,6 +116,10 @@ class EPAClient:
 				data = resp.json()
 				if not isinstance(data, list):
 					raise ValueError("Unexpected EPA response shape (expected list)")
+				# Jika respons live kosong, gunakan data sampel untuk pengalaman demo yang lebih baik.
+				if not data:
+					logger.info(f"EPA response for {url} was empty. Using sample data as fallback.")
+					return self.create_sample_data()
 				return data
 			else:
 				logger.warning(f"EPA Envirofacts HTTP {resp.status_code} for {url}, using sample data")
@@ -114,6 +127,5 @@ class EPAClient:
 		except Exception as e:
 			logger.error(f"Error fetching EPA data from {url}: {e}")
 			return self.create_sample_data()
-
 
 __all__ = ["EPAClient"]

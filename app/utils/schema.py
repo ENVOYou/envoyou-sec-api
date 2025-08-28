@@ -1,195 +1,52 @@
-"""
-Permit data schema and normalization helpers.
-"""
-from __future__ import annotations
-
-from dataclasses import dataclass, asdict, field
+from typing import Any, Dict
 from datetime import datetime
-from typing import Any, Dict, Optional
+
+def ensure_epa_emission_schema(data: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Normalizes raw EPA Envirofacts (e.g., tri_facility) data into a consistent
+    emission-like schema.
+
+    Args:
+        data (Dict[str, Any]): Raw data record from EPA.
+
+    Returns:
+        Dict[str, Any]: Normalized record.
+    """
+    # Check for already normalized keys first to handle sample data correctly
+    facility_name = data.get("facility_name") or data.get("PRIMARY_NAME") or data.get("FACILITY_NAME") or "Unknown Facility"
+    state = data.get("state") or data.get("STATE_ABBR") or data.get("STATE") or None
+    
+    normalized = {
+        "facility_name": facility_name,
+        "state": state,
+        "county": data.get("county") or data.get("COUNTY_NAME") or data.get("COUNTY") or None,
+        # For tri_facility, year and pollutant are not directly available.
+        # We'll add placeholders or infer them if possible.
+        "year": data.get("year") or datetime.now().year, # Default to current year if not present
+        "pollutant": data.get("pollutant") or "TRI", # Default to 'TRI' for TRI facilities
+        "emissions": data.get("emissions") or data.get("EMISSIONS") or None, # Placeholder for actual emission value
+        "unit": data.get("unit") or data.get("UNIT") or None, # Placeholder for emission unit
+        # Add other relevant fields from raw data if needed
+        "raw_data_id": data.get("raw_data_id") or data.get("FACILITY_ID") or data.get("TRI_FACILITY_ID") or None,
+        "source_table": data.get("source_table") or "tri_facility" # Indicate source table
+    }
+    return normalized
 
 
-@dataclass
-class Permit:
-	nama_perusahaan: Optional[str] = None
-	alamat: Optional[str] = None
-	jenis_layanan: Optional[str] = None
-	nomor_sk: Optional[str] = None
-	tanggal_berlaku: Optional[str] = None
-	judul_kegiatan: Optional[str] = None
-	status: Optional[str] = None
-	source: str = "PTSP MENLHK"
-	retrieved_at: str = datetime.now().isoformat()
-	extras: Dict[str, Any] = field(default_factory=dict)
+def ensure_iso_cert_schema(data: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Normalizes raw ISO certification data into a consistent schema.
 
-	def to_dict(self) -> Dict[str, Any]:
-		return asdict(self)
+    Args:
+        data (Dict[str, Any]): Raw data record from ISO data source.
 
-
-@dataclass
-class EPAEmission:
-	"""Schema for raw EPA emission data normalized shape (subset)."""
-	facility_name: Optional[str] = None
-	plant_id: Optional[str] = None
-	state: Optional[str] = None
-	county: Optional[str] = None
-	year: Optional[int] = None
-	pollutant: Optional[str] = None
-	emissions: Optional[float] = None
-	unit: Optional[str] = None
-	source: str = "EPA Envirofacts"
-	retrieved_at: str = datetime.now().isoformat()
-	raw: Dict[str, Any] = field(default_factory=dict)
-
-	def to_dict(self) -> Dict[str, Any]:
-		return asdict(self)
-
-
-@dataclass
-class ISOCert:
-	company: Optional[str] = None
-	country: Optional[str] = None
-	certificate: Optional[str] = None
-	valid_until: Optional[str] = None
-	source: str = "ISO"
-	retrieved_at: str = datetime.now().isoformat()
-	raw: Dict[str, Any] = field(default_factory=dict)
-
-	def to_dict(self) -> Dict[str, Any]:
-		return asdict(self)
-
-
-@dataclass
-class EEAEnv:
-	country: Optional[str] = None
-	indicator: Optional[str] = None
-	year: Optional[int] = None
-	value: Optional[float] = None
-	unit: Optional[str] = None
-	source: str = "EEA"
-	retrieved_at: str = datetime.now().isoformat()
-	raw: Dict[str, Any] = field(default_factory=dict)
-
-	def to_dict(self) -> Dict[str, Any]:
-		return asdict(self)
-
-
-def ensure_permit_schema(record: Dict[str, Any]) -> Dict[str, Any]:
-	"""Map a loose record to our standard Permit fields with sensible defaults."""
-	if not isinstance(record, dict):
-		return Permit().to_dict()
-
-	def _pick(keys):
-		for k in keys:
-			if k in record and record[k] not in (None, ""):
-				return record[k]
-		return None
-
-	mapped = Permit(
-		nama_perusahaan=_pick(["nama_perusahaan", "perusahaan", "nama", "pemohon", "company_name"]),
-		alamat=_pick(["alamat", "address", "lokasi"]),
-		jenis_layanan=_pick(["jenis_layanan", "layanan", "service_type", "jenis"]),
-		nomor_sk=_pick(["nomor_sk", "no_sk", "sk_number", "nomor"]),
-		tanggal_berlaku=_pick(["tanggal_berlaku", "berlaku", "valid_date", "tanggal"]),
-		judul_kegiatan=_pick(["judul_kegiatan", "kegiatan", "activity", "judul"]),
-		status=_pick(["status", "keaktifan"]))
-
-	return mapped.to_dict()
-
-
-def ensure_epa_emission_schema(record: Dict[str, Any]) -> Dict[str, Any]:
-	"""Normalize EPA emissions record to the Permit schema + extras."""
-	if not isinstance(record, dict):
-		return Permit().to_dict()
-
-	def _pick(keys):
-		for k in keys:
-			if k in record and record[k] not in (None, ""):
-				return record[k]
-		return None
-
-	company = _pick(["facility_name", "plant_name", "company_name", "nama_perusahaan", "facility"])
-	state = record.get("state") or record.get("state_name") or record.get("state_abbr")
-	county = record.get("county") or record.get("county_name")
-	addr_parts = [str(x) for x in [county, state] if x]
-	alamat = ", ".join(addr_parts) if addr_parts else None
-
-	mapped = Permit(
-		nama_perusahaan=company,
-		alamat=alamat,
-		jenis_layanan="EPA Emission Data",
-		nomor_sk=None,
-		tanggal_berlaku=str(record.get("year")) if record.get("year") is not None else None,
-		judul_kegiatan=str(record.get("pollutant")) if record.get("pollutant") is not None else None,
-		status=None,
-		source="EPA Envirofacts",
-		extras={
-			"plant_id": record.get("plant_id") or record.get("facility_id") or record.get("tri_facility_id") or record.get("registry_id"),
-			"emissions": record.get("emissions"),
-			"unit": record.get("unit"),
-			"state": state,
-			"county": county,
-			"raw": {k: v for k, v in record.items() if k not in {"facility_name", "plant_name", "company_name", "state", "county", "year", "pollutant", "emissions", "unit", "plant_id", "facility_id"}},
-		},
-	)
-
-	return mapped.to_dict()
-
-
-def ensure_iso_cert_schema(record: Dict[str, Any]) -> Dict[str, Any]:
-	if not isinstance(record, dict):
-		return ISOCert().to_dict()
-	company = record.get("company") or record.get("organization")
-	country = record.get("country")
-	certificate = record.get("certificate") or record.get("standard")
-	valid_until = record.get("valid_until") or record.get("expiry")
-	mapped = ISOCert(
-		company=company,
-		country=country,
-		certificate=certificate,
-		valid_until=valid_until,
-		raw={k: v for k, v in record.items() if k not in {"company", "organization", "country", "certificate", "standard", "valid_until", "expiry"}},
-	)
-	# also provide Permit-like view
-	permit_like = Permit(
-		nama_perusahaan=company,
-		alamat=None,
-		jenis_layanan="ISO Certification",
-		nomor_sk=None,
-		tanggal_berlaku=valid_until,
-		judul_kegiatan=certificate,
-		status=None,
-		source="ISO",
-		extras={"country": country, "raw": mapped.raw},
-	)
-	return permit_like.to_dict()
-
-
-def ensure_eea_env_schema(record: Dict[str, Any]) -> Dict[str, Any]:
-	if not isinstance(record, dict):
-		return EEAEnv().to_dict()
-	country = record.get("country")
-	indicator = record.get("indicator")
-	year = record.get("year")
-	value = record.get("value")
-	unit = record.get("unit")
-	mapped = EEAEnv(
-		country=country,
-		indicator=indicator,
-		year=int(year) if year is not None else None,
-		value=float(value) if value is not None else None,
-		unit=unit,
-		raw={k: v for k, v in record.items() if k not in {"country", "indicator", "year", "value", "unit"}},
-	)
-	# Permit-like normalized output
-	permit_like = Permit(
-		nama_perusahaan=None,
-		alamat=country,
-		jenis_layanan="EEA Indicator",
-		nomor_sk=None,
-		tanggal_berlaku=str(mapped.year) if mapped.year is not None else None,
-		judul_kegiatan=indicator,
-		status=None,
-		source="EEA",
-		extras={"value": mapped.value, "unit": mapped.unit, "raw": mapped.raw},
-	)
-	return permit_like.to_dict()
+    Returns:
+        Dict[str, Any]: Normalized record.
+    """
+    normalized = {
+        "nama_perusahaan": data.get("company") or data.get("nama_perusahaan") or "Unknown Company",
+        "country": data.get("country") or None,
+        "certificate": data.get("certificate") or "ISO 14001",
+        "valid_until": data.get("valid_until") or None,
+    }
+    return normalized
