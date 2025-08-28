@@ -1,60 +1,79 @@
-import os
-import requests
-from dotenv import load_dotenv
+from __future__ import annotations
 
-load_dotenv()
+import os
+import logging
+from typing import Any, Dict, List, Optional
+
+import requests
+
+logger = logging.getLogger(__name__)
+
 
 class CAMDClient:
     """
-    Client for interacting with the Clean Air Markets Program Data (CAMPD) API.
-    This client manages requests and authentication using a dedicated API key.
+    Klien untuk API EPA Clean Air Markets Program Data (CAMPD).
+    API ini menyediakan data emisi dan kepatuhan untuk pembangkit listrik.
+    
+    Dokumentasi API: https://www.epa.gov/airmarkets/cam-api-portal
     """
-    def __init__(self):
+
+    def __init__(self) -> None:
+        self.base_url = os.getenv("CAMPD_API_BASE_URL", "https://api.epa.gov/easey")
+        # Kunci API CAMPD didapatkan dari environment variable.
+        # Anda bisa mendapatkannya di: https://www.epa.gov/airmarkets/cam-api-portal
         self.api_key = os.getenv("CAMPD_API_KEY")
+        
         if not self.api_key:
-            raise ValueError("CAMPD_API_KEY environment variable not set.")
-        self.base_url = "https://api.epa.gov/easey"
+            logger.warning("CAMPD_API_KEY tidak diset. Permintaan ke CAMD API akan gagal.")
 
-    def get_emissions_data(self, facility_id):
-        """
-        Retrieves emissions data for a specific facility.
+        self.session = requests.Session()
+        self.session.headers.update({
+            "Accept": "application/json",
+            "x-api-key": self.api_key or "",
+            "User-Agent": "project-permit-api/1.0 (+https://github.com/hk-dev13)"
+        })
 
-        Args:
-            facility_id (int): The ID of the facility to retrieve data for.
-
-        Returns:
-            dict: A dictionary containing the emissions data, or None if the request fails.
-        """
-        endpoint = f"/api/v2/facilities/{facility_id}/emissions"
-        headers = {
-            "x-api-key": self.api_key
-        }
-        try:
-            response = requests.get(f"{self.base_url}{endpoint}", headers=headers)
-            response.raise_for_status()  # Raise an exception for bad status codes
-            return response.json()
-        except requests.exceptions.RequestException as e:
-            print(f"Error fetching emissions data from CAMPD: {e}")
+    def _make_request(self, endpoint: str, params: Optional[Dict[str, Any]] = None) -> Optional[List[Dict[str, Any]]]:
+        """Helper untuk membuat permintaan ke API CAMPD."""
+        if not self.api_key:
             return None
 
-    def get_compliance_data(self, facility_id):
-        """
-        Retrieves compliance data for a specific facility.
-
-        Args:
-            facility_id (int): The ID of the facility to retrieve data for.
-
-        Returns:
-            dict: A dictionary containing the compliance data, or None if the request fails.
-        """
-        endpoint = f"/api/v2/facilities/{facility_id}/compliance"
-        headers = {
-            "x-api-key": self.api_key
-        }
+        url = f"{self.base_url}{endpoint}"
         try:
-            response = requests.get(f"{self.base_url}{endpoint}", headers=headers)
+            response = self.session.get(url, params=params, timeout=20)
             response.raise_for_status()
             return response.json()
         except requests.exceptions.RequestException as e:
-            print(f"Error fetching compliance data from CAMPD: {e}")
+            logger.error(f"Error saat meminta data dari CAMPD endpoint {endpoint}: {e}")
             return None
+        except Exception as e:
+            logger.error(f"Error umum saat memproses permintaan CAMPD: {e}")
+            return None
+
+    def get_emissions_data(self, facility_id: int, year: int = 2022) -> Optional[List[Dict[str, Any]]]:
+        """
+        Mengambil data emisi tahunan (CO2, SO2, NOx) untuk fasilitas tertentu.
+        
+        Endpoint: /apportioned/annual
+        """
+        endpoint = "/apportioned/annual"
+        params = {
+            "facilityId": facility_id,
+            "year": year,
+        }
+        return self._make_request(endpoint, params)
+
+    def get_compliance_data(self, facility_id: int, year: int = 2022) -> Optional[List[Dict[str, Any]]]:
+        """
+        Mengambil data kepatuhan tahunan untuk fasilitas tertentu.
+        
+        Endpoint: /compliance/annual
+        """
+        endpoint = "/compliance/annual"
+        params = {
+            "facilityId": facility_id,
+            "year": year,
+        }
+        return self._make_request(endpoint, params)
+
+__all__ = ["CAMDClient"]
