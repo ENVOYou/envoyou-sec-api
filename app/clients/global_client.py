@@ -1,11 +1,9 @@
 """
-EPA Global Client
+EPA Envirofacts Client
 
-Implementasi klien untuk mengambil data emisi pembangkit listrik dari EPA.
-Tetap mengekspor nama kelas sebagai `KLHKClient` untuk kompatibilitas
-dengan bagian lain aplikasi yang sudah mengimpor nama tersebut.
+Implementasi klien untuk mengambil data fasilitas dari EPA Envirofacts API.
+Data ini digunakan sebagai proksi untuk informasi emisi.
 """
-
 from __future__ import annotations
 
 import os
@@ -21,10 +19,9 @@ logger = logging.getLogger(__name__)
 
 class EPAClient:
 	"""
-	Klien EPA untuk mengambil data emisi pembangkit listrik.
+	Klien untuk EPA Envirofacts API.
 
-	Sumber default: Envirofacts efservice (konfig via env var)
-	Fallback opsional: EASEY/CAMD (dapat ditambahkan kemudian)
+	Sumber: Envirofacts efservice (dikonfigurasi via env var)
 	"""
 
 	def __init__(self) -> None:
@@ -40,43 +37,8 @@ class EPAClient:
 			"User-Agent": "project-permit-api/1.0 (+https://github.com/hk-dev13)"
 		})
 
-	# --- Public API expected by routes ---
-	def get_status_sk(self, plain: bool = False) -> Optional[List[Dict[str, Any]]]:
-		"""
-		Untuk kompatibilitas: kembalikan daftar record data emisi.
-		Parameter `plain` diabaikan.
-		"""
-		try:
-			records = self.get_emissions_power_plants(limit=200)
-			return records
-		except Exception as e:
-			logger.error(f"EPAClient.get_status_sk error: {e}")
-			return None
-
-	def search_permits_by_company(self, company_name: str, data: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-		"""Cari berdasarkan nama fasilitas/pabrik (facility/plant name)."""
-		if not data:
-			return []
-		key_candidates = ["nama_perusahaan", "facility_name", "plant_name", "facility", "company_name"]
-		term = company_name.lower()
-		results: List[Dict[str, Any]] = []
-		for rec in data:
-			for k in key_candidates:
-				val = str(rec.get(k, "") or "").lower()
-				if term in val:
-					results.append(rec)
-					break
-		return results
-
-	def filter_active_permits(self, data: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-		"""
-		Data emisi tidak memiliki konsep 'aktif' seperti izin.
-		Untuk kompatibilitas, kembalikan data apa adanya.
-		"""
-		return list(data or [])
-
-	def format_permit_data(self, data: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-		"""Normalisasi record EPA ke skema standar Permit + extras (EPA)."""
+	def format_emission_data(self, data: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+		"""Normalisasi record EPA ke skema standar emisi."""
 		if not data:
 			return []
 		return [ensure_epa_emission_schema(rec) for rec in data if isinstance(rec, dict)]
@@ -109,7 +71,7 @@ class EPAClient:
 		]
 
 	# --- EPA-specific helpers ---
-	def get_emissions_power_plants(
+	def get_facilities_by_state(
 		self,
 		*,
 		state: Optional[str] = None,
@@ -118,11 +80,12 @@ class EPAClient:
 		timeout: Optional[float] = None,
 	) -> List[Dict[str, Any]]:
 		"""
-		Ambil data fasilitas (sebagai proxy emisi) dari Envirofacts efservice.
+		Ambil data fasilitas dari Envirofacts efservice, difilter berdasarkan negara bagian (state).
+
 		Menggunakan format URL terdokumentasi: data.epa.gov/efservice
 		- Default tabel: tri_facility (stabil dan publik)
 		- Filter yang dipakai: state_abbr (jika diberikan)
-		- Pembatasan baris: rows/0:(limit-1)
+
 		Catatan: Untuk dataset lain, set EPA_ENV_TABLE; sesuaikan kolom filter.
 		Jika permintaan gagal, kembalikan sample data.
 		"""
@@ -153,8 +116,4 @@ class EPAClient:
 			return self.create_sample_data()
 
 
-# Export with legacy name for compatibility
-KLHKClient = EPAClient
-
-__all__ = ["KLHKClient", "EPAClient"]
-
+__all__ = ["EPAClient"]

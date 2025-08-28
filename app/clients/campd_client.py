@@ -1,10 +1,11 @@
 from __future__ import annotations
 
-import os
 import logging
 from typing import Any, Dict, List, Optional
 
 import requests
+
+from app.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -18,11 +19,11 @@ class CAMDClient:
     """
 
     def __init__(self) -> None:
-        self.base_url = os.getenv("CAMPD_API_BASE_URL", "https://api.epa.gov/easey")
-        # Kunci API CAMPD didapatkan dari environment variable.
+        self.base_url = settings.CAMPD_API_BASE_URL
+        # Kunci API CAMPD didapatkan dari environment variable (via settings).
         # Anda bisa mendapatkannya di: https://www.epa.gov/airmarkets/cam-api-portal
-        self.api_key = os.getenv("CAMPD_API_KEY")
-        
+        self.api_key = settings.CAMPD_API_KEY
+
         if not self.api_key:
             logger.warning("CAMPD_API_KEY tidak diset. Permintaan ke CAMD API akan gagal.")
 
@@ -30,7 +31,7 @@ class CAMDClient:
         self.session.headers.update({
             "Accept": "application/json",
             "x-api-key": self.api_key or "",
-            "User-Agent": "project-permit-api/1.0 (+https://github.com/hk-dev13)"
+            "User-Agent": f"project-permit-api/1.0 (+{settings.GITHUB_REPO_URL})"
         })
 
     def _make_request(self, endpoint: str, params: Optional[Dict[str, Any]] = None) -> Optional[List[Dict[str, Any]]]:
