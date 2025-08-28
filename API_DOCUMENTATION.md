@@ -1,21 +1,19 @@
-# Environmental Data Verification API - Documentation
+# Envoyou CEVS API - Official Documentation
 
 📑 Quick Links
-- [🌍 Project Summary](PROJECT_SUMMARY.md) 
-- [📘 Main README](README.md)
-- [🚀 Performance Improvements](PERFORMANCE_IMPROVEMENTS.md)
-
-An API that delivers standardized environmental data with **secure access control** and **rate limiting**, accessible across industries and analysis use cases.
+- [📘 Project README](README.md)
+- [🚀 Performance Report](PERFORMANCE_IMPROVEMENTS.md)
 
 ## 📋 Overview
 
-This API acts as a proxy/aggregator between your applications and multiple official data sources (EPA, EEA, UNEP, ISO, KLHK). It provides:
+This API is the core engine of the [Envoyou](https://envoyou.com) platform. It aggregates data from multiple official sources (EPA, EEA, ISO, etc.) to calculate a **Composite Environmental Verification Score (CEVS)**.
+
+Key capabilities include:
 
 ✅ **Secure API Key Authentication**
-✅ **Dynamic Rate Limiting** based on tier  
+✅ **Tier-Based Rate Limiting**
 ✅ **Comprehensive Caching** for better performance
-✅ **Data filtering & preprocessing**
-✅ **Country name normalization** across sources
+✅ **Advanced Data Filtering & Normalization**
 ✅ **Standardized response format**
 ✅ **Pagination for large datasets**
 ✅ **Robust error handling**
@@ -24,7 +22,7 @@ This API acts as a proxy/aggregator between your applications and multiple offic
 ## 🔐 Authentication & API Keys
 
 ### Getting Your API Key
-
+ 
 **For Development/Testing:**
 Use the demo keys provided:
 - **Basic Tier**: `demo_key_basic_2025` (30 requests/minute)
@@ -37,115 +35,72 @@ Contact the API administrator to get your production API key.
 
 Include your API key in requests using one of these methods:
 
-#### Method 1: Authorization Header (Recommended)
+#### 1. Authorization Header (Recommended)
 ```bash
 curl -H "Authorization: Bearer your_api_key_here" \
-  "http://localhost:5000/global/emissions"
+  "http://localhost:8000/global/emissions"
 ```
 
-#### Method 2: X-API-Key Header  
+#### 2. X-API-Key Header  
 ```bash
 curl -H "X-API-Key: your_api_key_here" \
-  "http://localhost:5000/global/emissions"
+  "http://localhost:8000/global/emissions"
 ```
 
-#### Method 3: Query Parameter (Development Only)
+#### 3. Query Parameter (Development Only)
 ```bash
-curl "http://localhost:5000/global/emissions?api_key=your_api_key_here"
+curl "http://localhost:8000/global/emissions?api_key=your_api_key_here"
 ```
 
 ### Rate Limits by Tier
 
-| Tier | Requests/minute | Use Case |
-|------|----------------|----------|
-| Basic | 30 | Development, testing, light usage |  
-| Premium | 100 | Production applications, heavy usage |
-| Master | 200 | Administrative access |
+@@ 59,62 @@ | Premium | 100 | Production applications, heavy usage | | Master | 200 | Administrative access |
 
-## 🚀 Getting Started
-
-### Prerequisites
-```bash
-pip install flask flask-cors flask-limiter python-dotenv requests beautifulsoup4 pandas pyarrow
-```
-
-### Environment Setup
-1. Copy the environment template:
-```bash
-cp .env.example .env
-```
-
-2. Update `.env` with your configuration:
-```env
-API_KEYS=your_api_key:YourApp:basic
-MASTER_API_KEY=your_secure_master_key
-```
-
-### Running the Server
-
-#### Local Development
-```bash
-python api/api_server.py
-```
-
-#### Docker (Recommended for Production)
-```bash
-# Build and run
-docker-compose up --build
-
-# Or manually:
-docker build -t permit-api .
-docker run -p 5000:5000 permit-api
-```
 
 ## 🌐 Base URL
-- **Local**: `http://localhost:5000`
-- **Docker**: `http://localhost:5000` 
+- **Local**: `http://localhost:8000` 
 
 ## 📡 API Endpoints
 
-### Public Endpoints (No API Key Required)
+### Health & Status
 
-#### 1. API Information
+#### API Information
 **GET** `/`
 
-Returns basic metadata about the API.
+Returns basic metadata and a list of available endpoints.
 
-**Response:**
 
-{
-  "name": "Environmental Data Verification API",
-  "version": "1.0.0",
-  "description": "API proxy for accessing environmental permit and emission datasets",
-  "endpoints": { ... },
-  "usage_examples": { ... }
-}
-
-#### 2. Health Check
+#### Health Check
 **GET** `/health`
 
 Returns API health status.
 
-**Response:**
-```json
-{
-  "status": "healthy",
-  "timestamp": "2025-08-19T10:30:00Z",
-  "version": "1.0.0"
-}
+### Core CEVS Endpoints
+
+All `/global/*` endpoints require a valid API key.
+
+#### CEVS Composite Score
+
+**GET** `/global/cevs/{company_name}`
+
+Returns the **Composite Environmental Verification Score** by combining EPA, ISO, EEA, and EDGAR data. This is the primary endpoint of the API.
+
+**Path Parameters:**
+- `company_name` (required): The name of the company to score.
+
+**Query Parameters:**
+- `country` (optional): The company's primary country of operation for more accurate, localized analysis. 
+
+**Example Request:**
+```bash
+curl -H "X-API-Key: demo_key_premium_2025" \
+  "http://localhost:8000/global/cevs/Green%20Energy%20Co?country=US"
 ```
 
-### Protected Endpoints (API Key Required)
-
-All `/global/*` and `/admin/*` endpoints require a valid API key. Include your API key using one of the authentication methods shown above.
-
-#### 3. Global Emissions Data (EPA)
+#### Global Emissions Data (EPA)
 **GET** `/global/emissions`
 
 Returns EPA power plant emissions data with filtering and pagination.
-
-**Authentication:** Required  
-**Rate Limit:** Based on your tier (30-200 requests/minute)
 
 **Query Parameters:**
 - `state` (optional): Filter by US state (e.g., "CA", "TX")
@@ -156,76 +111,54 @@ Returns EPA power plant emissions data with filtering and pagination.
 
 **Example Request:**
 ```bash
-curl -H "Authorization: Bearer demo_key_basic_2025" \
-  "http://localhost:5000/global/emissions?state=CA&year=2023&limit=10"
+curl -H "X-API-Key: demo_key_basic_2025" \
+  "http://localhost:8000/global/emissions?state=CA&limit=5"
 ```
+Response: @@ 123,11 @@ "data": [ { "facility_name": "Example Power Plant", "state": "CA",
+ "year": 2023,
+ "pollutant": "CO2",
+ "emissions": 1500000.0,
+ "unit": "tons", "raw_data_id": "FAC12345"
+ } ], "pagination": { @@ 139,10 @@ }
 
-**Response:**
-```json
-{
-  "status": "success",
-  "data": [
-    {
-      "facility_name": "Example Power Plant",
-      "state": "CA", 
-      "year": 2023,
-      "pollutant": "CO2",
-      "emissions": 1500000.0,
-      "unit": "tons"
-    }
-  ],
-  "pagination": {
-    "page": 1,
-    "limit": 10,
-    "total": 245
-  },
-  "retrieved_at": "2025-08-19T10:30:00Z"
-}
-```
 
-#### 4. Emissions Statistics  
+#### Emissions Statistics
 **GET** `/global/emissions/stats`
 
-Returns aggregated emissions statistics.
-
-**Authentication:** Required
+Returns aggregated emissions statistics from the cached EPA dataset.
 
 **Response:**
-```json
-{
-  "status": "success", 
-  "data": {
-    "total_facilities": 1250,
-    "total_emissions": 125000000.0,
-    "by_state": {"CA": 15000000, "TX": 22000000},
-    "by_pollutant": {"CO2": 100000000, "NOx": 25000000}
-  }
-}
+```json 
+@@ 156,76 @@
+
 ```
 
-#### 5. ISO 14001 Certifications
-**GET** `/global/iso`
+#### Power Plant Data (CAMPD) 
+**GET** `/global/campd`
 
-Returns ISO 14001 environmental certification data.
-
-**Authentication:** Required  
-
+Exposes raw emissions and compliance data from the EPA's CAMPD API for a specific power plant facility.
+ 
 **Query Parameters:**
-- `country` (optional): Filter by country (e.g., "Sweden", "USA", "DE")
-- `limit` (optional): Maximum results (default: 100)
+- `facility_id` (integer, required): The facility ID from the EPA CAMPD system.
 
 **Example Request:**
 ```bash
 curl -H "X-API-Key: demo_key_premium_2025" \
-  "http://localhost:5000/global/iso?country=Sweden&limit=20"
+  "http://localhost:8000/global/campd?facility_id=7"
 ```
+#### ISO 14001 Certifications
+**GET** `/global/iso`
 
-#### 6. EEA Environmental Indicators
+### Returns ISO 14001 environmental certification data.
+
+**Query Parameters:**
+
+- `country` (optional): Filter by country (e.g., "Sweden", "USA", "DE")
+- `limit` (optional): Maximum results (default: 100)
+
+#### EEA Environmental Indicators 
 **GET** `/global/eea`
-
 Returns European Environment Agency data from Parquet sources.
-
-**Authentication:** Required
 
 **Query Parameters:**
 - `country` (optional): Filter by country name
@@ -233,369 +166,80 @@ Returns European Environment Agency data from Parquet sources.
 - `year` (optional): Filter by year
 - `limit` (optional): Maximum results (default: 50)
 
-#### 7. EDGAR Emissions Data  
+#### EDGAR Emissions Data  
 **GET** `/global/edgar`
 
 Returns EDGAR urban emissions data with trend analysis.
-
-**Authentication:** Required
 
 **Query Parameters:**
 - `country` (required): Country name (normalized automatically)
 - `pollutant` (optional): Pollutant type (default: "PM2.5")  
 - `window` (optional): Trend analysis window in years (default: 3)
 
-## Endpoint Data Global
-
-### GET /global/campd
-
-Mengekspos data mentah dari API CAMPD untuk fasilitas tertentu.
-
-**Parameter Kueri:**
-- `facility_id` (integer, wajib): ID fasilitas dari CAMPD.
-
-**Contoh Permintaan:**
-```bash
-curl -X GET "http://localhost:5000/global/campd?facility_id=12345"
-
-**2. Buat *Test Case* Baru**
-
-Tambahkan *test case* baru di `tests/test_cevs.py` dan `tests/test_global_routes.py`.
-
-**Di `tests/test_cevs.py`:**
-```python
-import pytest
-from unittest.mock import patch, MagicMock
-from api.services.cevs_aggregator import compute_cevs_for_company
-
-# (Test case yang ada tetap di sini)
-
-@patch('api.services.cevs_aggregator.CAMDClient')
-def test_compute_cevs_with_campd_data(MockCAMDClient):
-    """
-    Test CEVS computation with mocked CAMPD data.
-    """
-    # Siapkan mock untuk data emisi dan kepatuhan
-    mock_client = MockCAMDClient.return_value
-    mock_client.get_emissions_data.return_value = [{'co2Mass': 2000000}]
-    mock_client.get_compliance_data.return_value = [{'compliantIndicator': False}]
-
-    # Panggil fungsi dengan nama perusahaan yang ada di dalam facility_id_map
-    result = compute_cevs_for_company("Example Power Plant Inc.", "US")
-
-    # Periksa apakah skor disesuaikan dengan benar
-    assert result['cevs_score'] == -50  # -20 untuk emisi, -30 untuk kepatuhan
-    assert 'campd_emissions' in result['components']
-    assert 'campd_compliance' in result['components']
-
-#### 8. CEVS Composite Score
-**GET** `/global/cevs/<company>`
-
-Returns Composite Environmental Verification Score combining EPA, ISO, EEA, and EDGAR data.
-
-**Authentication:** Required
-
-**Path Parameters:**
-- `company` (required): Company name
-
-**Query Parameters:**  
-- `country` (optional): Company's country for localized analysis
-
-**Response:**
-```json
-{
-  "status": "success",
-  "data": {
-    "company": "Green Energy Co",
-    "cevs_score": 85.6,
-    "components": {
-      "epa_score": 70.2,
-      "iso_bonus": 15.0, 
-      "eea_renewable_bonus": 8.4,
-      "edgar_pollution_penalty": -8.0
-    },
-    "sources": ["EPA", "ISO", "EEA", "EDGAR"],
-    "country_context": "Sweden"
-  }
-}
-```
-
 ### Administrative Endpoints
 
-#### 9. List API Keys (Admin)
+All `/admin/*` endpoints require a **premium tier** API key.
+
+#### List API Keys
 **GET** `/admin/api-keys`
 
-Lists all registered API keys (premium tier required).
+Lists all registered API keys.
 
-#### 10. Create API Key (Admin)  
+#### Create API Key
 **POST** `/admin/api-keys`
 
-Creates a new API key (premium tier required).
+Creates a new API key.
 
-#### 11. API Usage Statistics (Admin)
+#### API Usage Statistics
 **GET** `/admin/stats`
 
-Returns API usage statistics (premium tier required).
+Returns API usage statistics.
 
-## Legacy Endpoints (No API Key Required)
+### Regional Data (Indonesia)
+These endpoints provide access to Indonesian environmental permit data from KLHK Amdalnet and do not require an API key.
+- `/permits`
+- `/permits/search`
+- `/permits/company/{company_name}`
 
-These endpoints remain open for backward compatibility:
-
-- `/permits` - Indonesian permit data (KLHK PTSP)
-- `/permits/search` - Search Indonesian permits
-
-## 🔧 Technical Features
-
-### Country Name Normalization
+### Technical Features
+@@ 233,12 @@
 
 The API automatically normalizes country names across all data sources for consistent data joining:
-
-- **Input**: "USA", "United States", "US" → **Normalized**: "united_states"  
+- **Input**: "USA", "United States", "US" → **Normalized**: "united_states"
 - **Input**: "Deutschland", "Germany", "DE" → **Normalized**: "germany"
 - **Input**: "Czech Republic", "Czechia", "CZ" → **Normalized**: "czech_republic"
 
 **Supported variants**: 50+ countries with 267+ name variations including:
-- Official names, common names, abbreviations
+- Official names, common names, and abbreviations
 - ISO codes (2-letter and 3-letter)
 - Alternative spellings and regional variants
 
-### Caching & Performance
-
+@@ 246,7 @@
 - **EEA Client**: LRU cache for Parquet downloads (10 items)
-- **ISO Client**: LRU cache for file operations (5-10 items)  
-- **EDGAR Client**: Global instance-level caching for Excel data
+- **ISO Client**: LRU cache for file operations (5-10 items)
+- **EDGAR Client**: Global instance
 - **Response caching**: 30s-5min depending on data freshness
 
 ### Error Handling
+@@ 257,7 @@ "message": "API key required. Include it in Authorization header...", "code": "MISSING_API_KEY", "demo_keys": {
 
-**Authentication Errors:**
-```json
-{
-  "status": "error",
-  "message": "API key required. Include it in Authorization header...",
-  "code": "MISSING_API_KEY",
-  "demo_keys": {
-    "basic": "demo_key_basic_2025", 
-    "premium": "demo_key_premium_2025"
-  }
-}
-```
+"basic": "demo_key_basic_2025",
+"basic": "demo_key_basic_2025", "premium": "demo_key_premium_2025" } @@ 274,7 @@
 
-**Rate Limit Errors:**
-```json
-{
-  "status": "error",
-  "message": "Rate limit exceeded: 30 per minute",
-  "code": "RATE_LIMIT_EXCEEDED",
-  "retry_after": 60
-}
-```
-
-**Data Errors:**
-```json
-{
+### Data Errors:
+json
+{ 
   "status": "error", 
   "message": "Country 'XYZ' not found in dataset",
   "code": "DATA_NOT_FOUND"
 }
-```
+@@ +284,10 @@
 
 ### Security Headers
 
 The API includes security headers:
-- `X-Content-Type-Options: nosniff`
-- `X-Frame-Options: DENY`  
-- `X-XSS-Protection: 1; mode=block`
-
-## 🚀 Deployment
-
-### Docker Deployment (Recommended)
-
-```bash
-# Clone repository
-git clone https://github.com/your-org/project-permit-api.git
-cd project-permit-api
-
-# Configure environment
-cp .env.example .env
-# Edit .env with your settings
-
-# Build and deploy
-docker-compose up -d --build
-
-# Check health
-curl http://localhost:5000/health
-```
-
-### Manual Deployment
-
-```bash
-# Install dependencies
-pip install -r requirements.txt
-
-# Set environment variables
-export FLASK_APP=api.api_server:app
-export FLASK_ENV=production
-export API_KEYS="your_key:YourApp:basic"
-
-# Run server
-python -m flask run --host=0.0.0.0 --port=5000
-```
-
-### Environment Variables
-
-See `.env.example` for full configuration options including:
-- API keys and authentication settings
-- Database connections (PostgreSQL, Redis)
-- Rate limiting configuration  
-- CORS and security settings
-- Logging levels
-
-## ⚡ Performance Tips
-
-1. **Use Premium Keys**: Get 100 requests/minute vs 30 for basic
-2. **Cache Responses**: API includes cache headers - respect them
-3. **Batch Requests**: Use pagination efficiently 
-4. **Specific Filters**: Use country/year filters to reduce response size
-5. **Proper Headers**: Always use Authorization header vs query params
-
-## 📞 Support & Contact
-
-- **Issues**: [GitHub Issues](https://github.com/your-org/project-permit-api/issues)
-- **API Questions**: Create an issue with "API" label
-- **Production Keys**: Contact your administrator
-
-
-## Notes:
-
-EDGAR UCDB Excel is configured via EDGAR_XLSX_PATH.
-
-Pollution trend source can be selected via CEVS_POLLUTION_SOURCE = auto | eea | edgar.
-
-## Data Schema
-Permit Object
-{
-  "nama_perusahaan": "string",      
-  "alamat": "string",               
-  "jenis_layanan": "string",        
-  "nomor_sk": "string",             
-  "tanggal_berlaku": "string",      
-  "judul_kegiatan": "string",       
-  "status": "string",               
-  "retrieved_at": "string",         
-  "source": "string"                
-}
-
-## Usage Examples
-Python Example
-import requests
-base_url = "http://localhost:5000"
-
-# Get permits
-r = requests.get(f"{base_url}/permits")
-print(r.json())
-
-# Search company
-r = requests.get(f"{base_url}/permits/search", params={'nama': 'PT Pertamina'})
-print(r.json())
-
-# Get statistics
-r = requests.get(f"{base_url}/permits/stats")
-print(r.json())
-
-## JavaScript Example
-const baseUrl = 'http://localhost:5000';
-
-async function getPermits(page = 1, limit = 10) {
-  const res = await fetch(`${baseUrl}/permits?page=${page}&limit=${limit}`);
-  return res.json();
-}
-
-## cURL Example
-# Get health status
-curl http://localhost:5000/health
-
-# Get all permits
-curl "http://localhost:5000/permits?page=1&limit=5"
-
-# Search company
-curl "http://localhost:5000/permits/search?nama=PT%20Pertamina"
-
-
-## Error Handling
-
-Standard Error Response:
-
-{
-  "status": "error",
-  "message": "Error description"
-}
-
-Code	Description
-200	Success
-400	Bad Request (missing params)
-404	Endpoint not found
-500	Internal server error
-
-
-## Performance & Caching
-
-Cache duration: 1 hour
-
-Strategy: In-memory (Redis recommended for production)
-
-Response time: <100ms for cached data
-
-
-## Configuration
-Environment Variables
-Variable	Default	Description
-PORT	5000	Server port
-DEBUG	True	Debug mode
-CACHE_DURATION	3600	Cache duration (sec)
-
-
-## Monitoring & Logging
-
-Logs include: requests, cache hits/misses, upstream API calls, errors.
-
-
-## Security Notes
-
-Public, read-only API (no auth required)
-
-CORS enabled
-
-Rate limiting recommended for production
-
-Input validation for query params
-
-
-
-## Contributing
-
-Fork repo
-
-Create feature branch
-
-Add tests
-
-Submit PR
-
-
-## 📝 Changelog
-v1.0.0
-
-Initial release
-
-CRUD endpoints
-
-Search, filtering, pagination
-
-Caching
-
-Error handling
-
-Documentation
-
-Made with ❤️ for environmental data transparency
+- `X-Content-Type-Options: nosniff` 
+- `X-Frame-Options: DENY`
+
+- **Issues**: Please open an issue on the project's GitHub repository.
+- **Production Keys**: Contact the Envoyou administrator.

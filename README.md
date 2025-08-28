@@ -1,98 +1,115 @@
-# ENVOYOU.COM: The Environmental Verification Platform
+# Envoyou CEVS Aggregator API
 
-![License: BSL-1.1](https://img.shields.io/badge/License-BSL--1.1-blue.svg)
-![Use: Non-Commercial](https://img.shields.io/badge/Use-Non--Commercial-orange.svg)
-![Re-License: Apache 2.0 (2028)](https://img.shields.io/badge/Re--License-Apache%202.0%20(2028)-green.svg)
-![Status: MVP Global](https://img.shields.io/badge/Status-MVP%20Global-brightblue.svg)
-![Build: Passing](https://img.shields.io/badge/Build-Passing-success.svg)
+[![Python Version](https://img.shields.io/badge/python-3.12-blue.svg)](https://www.python.org/downloads/release/python-3120/)
+[![Framework](https://img.shields.io/badge/framework-FastAPI-green.svg)](https://fastapi.tiangolo.com/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
----
+The official backend API for the [Envoyou](https://envoyou.com) platform. This service aggregates environmental data from multiple global sources to calculate a **Composite Environmental Verification Score (CEVS)**, providing a standardized metric for corporate environmental performance.
 
-### 🚀 Turning fragmented environmental data into a single, verifiable score that reflects an entity's true environmental commitment.
+## 📖 Overview
 
-**ENVOYOU.COM** is a multidimensional framework that integrates diverse environmental datasets to generate a **Comprehensive Environmental Verification Score (CEVS)**. This platform provides a unified, developer-friendly API for businesses, analysts, and ESG investors to access structured and actionable environmental insights.
+The CEVS Aggregator API acts as a robust data pipeline and scoring engine. It connects to various official data sources (e.g., EPA, EEA, ISO), normalizes the incoming data into a consistent schema, and applies a sophisticated scoring algorithm to generate the CEVS for a given company.
 
-## Key Features
+## ✨ Key Features
 
-- **Multi-Source Integration**: Aggregates data from global and national sources like the EPA, KLHK, ISO, EEA, and more.
-- **Comprehensive Scoring (CEVS)**: Utilizes a sophisticated, multi-criteria methodology to calculate a single, holistic environmental performance score.
-- **Standardized REST API**: Offers a clean, predictable, and well-documented API for easy integration.
-- **Developer-Friendly**: Provides automatic OpenAPI (Swagger) documentation for all endpoints.
-- **Modular Architecture**: Built with a clean, extensible structure that makes it easy to add new data sources and scoring components.
+- **Multi-Source Data Aggregation**: Integrates with key environmental data providers:
+  - **EPA (USA)**: Facility and power plant emissions data (Envirofacts, CAMPD).
+  - **EEA (Europe)**: Industrial pollution and renewable energy statistics.
+  - **EDGAR**: Global urban emissions data.
+  - **ISO**: ISO 14001 certification status.
+- **Composite Environmental Verification Score (CEVS)**: A proprietary scoring model that provides a holistic view of a company's environmental impact and commitment.
+- **Secure API Access**: All critical endpoints are protected by API key authentication.
+- **Tier-Based Rate Limiting**: Different usage tiers (Basic, Premium) to manage API load.
+- **Robust Caching**: In-memory and file-based caching for improved performance and reduced external API calls.
+- **Standardized Data Schemas**: All data is normalized into a clean, predictable format.
+- **Asynchronous Framework**: Built with FastAPI for high performance and scalability.
+- **Dockerized**: Ready for containerized deployment in any environment.
 
----
+## 📚 API Documentation
 
-## The CEVS Framework
+For detailed information on all available endpoints, request/response formats, and usage examples, please refer to the official **[API Documentation](API_DOCUMENTATION.md)**.
 
-The CEVS is calculated based on five core components:
-
-1.  **Regulatory Compliance**: Foundational data from bodies like the US EPA and Indonesia's KLHK, covering emissions, waste management, and regulatory violations.
-2.  **Environmental Management System (EMS) Maturity**: Assesses the robustness of a company's EMS, primarily using ISO 14001 certification data.
-3.  **Environmental Performance Indicators (EPI)**: Quantitative metrics beyond basic compliance, such as energy/water consumption, waste volumes, and GHG emissions (Scope 1, 2, & 3).
-4.  **Supply Chain Sustainability**: Insights into supplier performance using data from platforms like EcoVadis and Sedex.
-5.  **Eco-Friendly Product/Material Certifications**: Data from product-level certifications like LEI, COSMOS, and Cradle to Cradle.
-
----
-
-## Development Roadmap
-
-This project will be developed in four distinct phases:
-
-- **Phase 1: US-Focused Proof-of-Concept**: Build the initial CEVS prototype focusing on entities in the United States, leveraging the EPA Envirofacts API and ISO 14001 data to validate the core methodology.
-
-- **Phase 2: Global Data Partnerships**: Expand data sources by forming strategic partnerships with international bodies (UNEP, EEA), national agencies (KLHK, BPS in Indonesia), and sustainability platforms (EcoVadis, GBCI).
-
-- **Phase 3: Robust Data Harmonization Protocol**: Develop a sophisticated data harmonization protocol with standardized taxonomies and algorithms to normalize data from diverse sources into a consistent and comparable format.
-
-- **Phase 4: Pilot with Multinational Entities**: Test the mature CEVS framework in real-world scenarios with a diverse group of multinational corporations and financial institutions to gather feedback and refine the scoring model.
-
----
-
-## Getting Started
+## 🚀 Getting Started
 
 ### Prerequisites
+
 - Python 3.10+
-- Poetry (for dependency management, optional)
-- An API key for the CAMPD service (see Configuration).
+- Docker & Docker Compose (Recommended)
 
-### Installation & Setup
+### 1. Environment Setup
 
-1.  **Clone the repository:**
-    ```bash
-    git clone https://github.com/hk-dev13/project-permit-api.git
-    cd project-permit-api
-    ```
+First, create a `.env` file from the example template:
 
-2.  **Create a virtual environment and install dependencies:**
-    ```bash
-    python -m venv venv
-    source venv/bin/activate  # On Windows, use `venv\Scripts\activate`
-    pip install -r requirements.txt
-    ```
+```bash
+cp .env.example .env
+```
 
-3.  **Configure your environment:**
-    Create a `.env` file by copying the `.env.example` file. Add any necessary API keys (e.g., `CAMPD_API_KEY`).
+Now, open the `.env` file and configure the necessary variables. At a minimum, you should set your API keys. For development, you can use the demo keys.
 
-4.  **Run the development server:**
-    ```bash
-    uvicorn app.api_server:app --reload
-    ```
-    The API will be available at `http://127.0.0.1:8000`.
+```env
+# .env
+# --- General Server Configuration ---
+PORT=8000
+LOG_LEVEL=DEBUG
 
----
+# --- Security ---
+# For production, generate secure keys. See generate_keys.py
+API_KEYS="demo_key_basic_2025:DemoApp:basic,demo_key_premium_2025:PremiumApp:premium"
+MASTER_API_KEY="your_secure_master_key_for_admin_tasks"
 
-## API Usage
+# --- External API Keys ---
+CAMPD_API_KEY="YOUR_EPA_CAMPD_API_KEY" # Get from https://www.epa.gov/airmarkets/cam-api-portal
+```
 
-### Authentication
+### 2. Installation
 
-An API key is required for all `/global/*` endpoints. The local permit endpoints are currently public.
+Install the required Python packages:
 
-Provide your API key in one of the following ways:
-- **Authorization Header (Recommended)**: `Authorization: Bearer <your_api_key>`
-- **X-API-Key Header**: `X-API-Key: <your_api_key>`
+```bash
+pip install -r requirements.txt
+```
 
-### Interactive Documentation
+### 3. Running the Server
 
-Once the server is running, interactive OpenAPI (Swagger) documentation is available at:
+#### Local Development (with Uvicorn)
 
-[http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
+The server supports live reloading, which is ideal for development.
+
+```bash
+uvicorn app.api_server:app --reload --port 8000 --log-level debug
+```
+
+The API will be available at `http://localhost:8000`.
+
+#### Production (with Docker)
+
+Using Docker is the recommended way to run the application in production.
+
+```bash
+# Build and run the services in the background
+docker-compose up --build -d
+
+# Check the logs
+docker-compose logs -f
+
+# Stop the services
+docker-compose down
+```
+
+## ⚙️ Configuration
+
+The application is configured via environment variables, which are loaded by `pydantic-settings` from the `.env` file. Key configuration options are defined in `app/config.py`.
+
+- `PORT`: The port the server will run on.
+- `LOG_LEVEL`: The logging level (e.g., `DEBUG`, `INFO`, `WARNING`).
+- `API_KEYS`: A comma-separated list of valid API keys and their tiers.
+- `CAMPD_API_KEY`: Your API key for the EPA CAMPD service.
+- `*_XLSX_PATH`: Paths to local reference data files (EDGAR, ISO, Policy).
+
+## 🧪 Running Tests
+
+The project uses `pytest` for testing.
+
+```bash
+pytest
+```

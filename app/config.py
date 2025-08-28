@@ -21,6 +21,7 @@ class Settings(BaseSettings):
     ENVIRONMENT: str = "development" # Or "production"
     LOG_LEVEL: str = "DEBUG" # Set to DEBUG for detailed logs
     GITHUB_REPO_URL: str = "https://github.com/hk-dev13"
+    PORT: int = 8000
 
     # Konfigurasi API Eksternal
     # EPA Envirofacts
@@ -30,6 +31,12 @@ class Settings(BaseSettings):
     # EPA CAMPD
     CAMPD_API_BASE_URL: str = "https://api.epa.gov/easey"
     CAMPD_API_KEY: Optional[str] = None
+
+    # Logging
+    LOG_FILE: Optional[str] = None
+
+    #CORS Origins
+    CORS_ORIGINS: str = "*"
 
     # Sumber Data ISO
     ISO_API_BASE: Optional[str] = None

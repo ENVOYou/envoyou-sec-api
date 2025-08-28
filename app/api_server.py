@@ -55,8 +55,14 @@ log_handlers.append(logging.StreamHandler())
 logging.basicConfig(
     level=log_level,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=log_handlers
+    handlers=log_handlers,
+    force=True  # Force re-configuration to override Uvicorn's default logger
 )
+
+# Explicitly set Uvicorn's loggers to the desired level
+logging.getLogger("uvicorn").setLevel(log_level)
+logging.getLogger("uvicorn.access").setLevel(log_level)
+logging.getLogger("uvicorn.error").setLevel(log_level)
 logger = logging.getLogger(__name__)
 
 async def api_key_dependency(request: Request):

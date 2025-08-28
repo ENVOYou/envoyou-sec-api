@@ -96,7 +96,13 @@ async def global_emissions(
 
         # Langkah 2: Terapkan semua filter ke dataset yang kita miliki
         filtered_data = [
-            d for d in source_data if _matches_filters(d, state=state, year=year, pollutant=pollutant)
+            d for d in source_data if _matches_filters(
+                d,
+                # Teruskan semua filter. Panggilan API adalah filter utama untuk state,
+                # tetapi ini berfungsi sebagai pengaman dan menangani kasus cache tanpa state.
+                state=state,
+                year=year,
+                pollutant=pollutant)
         ]
         logger.debug(f"Filtered data after _matches_filters: {len(filtered_data)} records")
 
