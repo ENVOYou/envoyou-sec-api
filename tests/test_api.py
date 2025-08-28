@@ -53,7 +53,7 @@ def test_get_active_permits():
 
 
 def test_get_permits_by_company():
-    response = client.get("/permits/company/PT%20Semen%20Indonesia")
+    response = client.get("/permits/company/PT.%20Contoh%20Satu")
     assert response.status_code == 200
     assert "data" in response.json()
 
@@ -67,7 +67,7 @@ def test_get_permits_by_type():
 def test_get_permits_stats():
     response = client.get("/permits/stats")
     assert response.status_code == 200
-    assert "statistics" in response.json()
+    assert "total_permits" in response.json()["data"]
 
 
 def test_invalid_endpoint():
@@ -83,8 +83,6 @@ def test_search_without_parameters():
 
 def test_company_not_found():
     response = client.get("/permits/company/NonExistentCompany")
-    assert response.status_code == 200
-    assert "data" in response.json()
-    assert isinstance(response.json()["data"], list)
-    assert len(response.json()["data"]) == 0 or response.json()["data"] == []
+    assert response.status_code == 404
+    assert response.json()["detail"] == "Company not found"
 

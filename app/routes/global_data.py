@@ -60,7 +60,7 @@ def _matches_filters(item: Dict[str, Any], *, state: Optional[str], year: Option
     return True
 
 
-@router.get("/global/emissions", dependencies=[Depends(require_api_key)])
+@router.get("/emissions", dependencies=[Depends(require_api_key)])
 async def global_emissions(
     state: Optional[str] = None,
     year: Optional[int] = Query(None, alias="year"),
@@ -109,7 +109,7 @@ async def global_emissions(
         return JSONResponse(content={"status": "error", "message": str(e)}, status_code=500)
 
 
-@router.get("/global/emissions/stats", dependencies=[Depends(require_api_key)])
+@router.get("/emissions/stats", dependencies=[Depends(require_api_key)])
 async def global_emissions_stats():
     """Basic stats aggregated by state, pollutant, and year."""
     try:
@@ -145,7 +145,7 @@ async def global_emissions_stats():
         return JSONResponse(content={"status": "error", "message": str(e)}, status_code=500)
 
 
-@router.get("/global/iso", dependencies=[Depends(require_api_key)])
+@router.get("/iso", dependencies=[Depends(require_api_key)])
 async def global_iso(
     country: Optional[str] = None,
     limit: int = 50
@@ -164,7 +164,7 @@ async def global_iso(
         return JSONResponse(content={"status": "error", "message": str(e)}, status_code=500)
 
 
-@router.get("/global/eea", dependencies=[Depends(require_api_key)])
+@router.get("/eea", dependencies=[Depends(require_api_key)])
 async def global_eea(
     country: Optional[str] = None,
     indicator: str = "GHG",
@@ -185,7 +185,7 @@ async def global_eea(
         return JSONResponse(content={"status": "error", "message": str(e)}, status_code=500)
 
 
-@router.get("/global/edgar", dependencies=[Depends(require_api_key)])
+@router.get("/edgar", dependencies=[Depends(require_api_key)])
 async def global_edgar(
     country: str,
     pollutant: str = "PM2.5",
@@ -217,7 +217,7 @@ async def global_edgar(
         return JSONResponse(content={"status": "error", "message": str(e)}, status_code=500)
 
 
-@router.get("/global/cevs/{company_name}", dependencies=[Depends(require_api_key)])
+@router.get("/cevs/{company_name}", dependencies=[Depends(require_api_key)])
 async def global_cevs(
     company_name: str,
     country: Optional[str] = None
@@ -239,7 +239,7 @@ async def global_cevs(
         return JSONResponse(content={"status": "error", "message": str(e)}, status_code=500)
 
 
-@router.get("/global/campd", dependencies=[Depends(require_api_key)])
+@router.get("/campd", dependencies=[Depends(require_api_key)])
 async def get_campd_data(
     facility_id: int
 ):

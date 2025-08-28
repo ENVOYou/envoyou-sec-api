@@ -4,10 +4,17 @@ import pytest
 
 client = TestClient(app)
 
+# Define headers for authenticated requests
+headers = {"X-API-Key": "demo_key_basic_2025"}
+
+@pytest.fixture(autouse=True)
+def set_campd_api_key(monkeypatch):
+    """Set a dummy CAMPD API key for all tests in this module."""
+    monkeypatch.setenv("CAMPD_API_KEY", "test_key")
 
 def test_compute_cevs_for_company_basic():
     company_name = "Test Company"
-    response = client.get(f"/global/cevs/{company_name}")
+    response = client.get(f"/global/cevs/{company_name}", headers=headers)
     assert response.status_code == 200
     data = response.json()
     assert "score" in data and isinstance(data["score"], float)
@@ -19,7 +26,7 @@ def test_compute_cevs_for_company_basic():
 def test_compute_cevs_for_company_with_country():
     company_name = "Test Company"
     country = "Sweden"
-    response = client.get(f"/global/cevs/{company_name}?company_country={country}")
+    response = client.get(f"/global/cevs/{company_name}?company_country={country}", headers=headers)
     assert response.status_code == 200
     data = response.json()
     sources = data.get("sources", {})
@@ -35,7 +42,7 @@ def test_compute_cevs_for_company_with_country():
 def test_env_switch_pollution_source(monkeypatch, pollution_source_val, expected):
     monkeypatch.setenv("CEVS_POLLUTION_SOURCE", pollution_source_val)
     country = "United States" if pollution_source_val == "edgar" else "Austria"
-    response = client.get(f"/global/cevs/Test Company?company_country={country}")
+    response = client.get(f"/global/cevs/Test Company?company_country={country}", headers=headers)
     assert response.status_code == 200
     data = response.json()
     result = data["sources"].get("pollution_trend_source")
@@ -46,7 +53,7 @@ def test_env_switch_pollution_source(monkeypatch, pollution_source_val, expected
 
 
 def test_sweden_renewable_bonus_scenario():
-    response = client.get("/global/cevs/Swedish Green Tech AB?company_country=Sweden")
+    response = client.get("/global/cevs/Swedish Green Tech AB?company_country=Sweden", headers=headers)
     assert response.status_code == 200
     data = response.json()
     details = data["details"]
@@ -61,8 +68,8 @@ def test_sweden_renewable_bonus_scenario():
             renewable_bonus = components.get("renewables_bonus", 0)
             assert renewable_bonus > 0
 def test_pollution_penalty_variation():
-    res_germany = client.get("/global/cevs/German Industrial Corp?company_country=Germany")
-    res_poland = client.get("/global/cevs/Polish Manufacturing Ltd?company_country=Poland")
+    res_germany = client.get("/global/cevs/German Industrial Corp?company_country=Germany", headers=headers)
+    res_poland = client.get("/global/cevs/Polish Manufacturing Ltd?company_country=Poland", headers=headers)
     assert res_germany.status_code == 200
     assert res_poland.status_code == 200
     components_de = res_germany.json()["components"]
@@ -76,7 +83,7 @@ def test_pollution_penalty_variation():
 
 
 def test_austria_policy_bonus_scenario():
-    response = client.get("/global/cevs/Austrian ISO Certified Corp?company_country=Austria")
+    response = client.get("/global/cevs/Austrian ISO Certified Corp?company_country=Austria", headers=headers)
     assert response.status_code == 200
     data = response.json()
     sources = data["sources"]
@@ -88,7 +95,7 @@ def test_austria_policy_bonus_scenario():
 
 
 def test_component_balance_and_constraints():
-    response = client.get("/global/cevs/Test Balanced Corp?company_country=Germany")
+    response = client.get("/global/cevs/Test Balanced Corp?company_country=Germany", headers=headers)
     assert response.status_code == 200
     data = response.json()
     components = data["components"]
@@ -111,7 +118,7 @@ def test_component_balance_and_constraints():
     assert 0 <= components["policy_bonus"] <= 3
     
 def test_data_source_consistency():
-    response = client.get("/global/cevs/Source Test Corp?company_country=Finland")
+    response = client.get("/global/cevs/Source Test Corp?company_country=Finland", headers=headers)
     assert response.status_code == 200
     data = response.json()
     sources = data["sources"]

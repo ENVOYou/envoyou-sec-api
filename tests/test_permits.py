@@ -6,7 +6,9 @@ client = TestClient(app)
 def test_get_all_permits():
     response = client.get("/permits")
     assert response.status_code == 200
-    data = response.json()
+    response_data = response.json()
+    assert response_data["status"] == "success"
+    data = response_data["data"]
     assert isinstance(data, list)
     assert len(data) > 0
     for permit in data:
@@ -17,7 +19,9 @@ def test_get_all_permits():
 def test_get_permit_by_id():
     response = client.get("/permits/1")
     assert response.status_code == 200
-    permit = response.json()
+    response_data = response.json()
+    assert response_data["status"] == "success"
+    permit = response_data["data"]
     assert permit["id"] == 1
     
     response_not_found = client.get("/permits/999")

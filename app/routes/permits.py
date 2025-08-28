@@ -11,13 +11,6 @@ async def get_all_permits():
     """Endpoint untuk mendapatkan semua permits dengan response format standar"""
     return {"status": "success", "data": mock_permits}
 
-@router.get("/{permit_id}")
-async def get_permit_by_id(permit_id: int):
-    for permit in mock_permits:
-        if permit["id"] == permit_id:
-            return {"status": "success", "data": permit}
-    raise HTTPException(status_code=404, detail="Permit not found")
-
 @router.get("/active")
 async def get_active_permits():
     active = [p for p in mock_permits if p["status"].lower() == "aktif"]
@@ -35,6 +28,21 @@ async def get_permits_stats():
     }
     return {"status": "success", "data": stats}
 
+@router.get("/search")
+async def search_permits(params: PermitSearchParams = Depends()):
+    if not (params.nama or params.jenis or params.status):
+        raise HTTPException(status_code=400, detail="At least one search parameter required (nama, jenis, or status)")
+    results = []
+    for permit in mock_permits:
+        if params.nama and params.nama.lower() not in permit["company_name"].lower():
+            continue
+        if params.jenis and params.jenis.lower() not in permit["permit_type"].lower():
+            continue
+        if params.status and params.status.lower() != permit["status"].lower():
+            continue
+        results.append(permit)
+    return {"status": "success", "data": results}
+
 @router.get("/company/{company_name}")
 async def get_permits_by_company(company_name: str):
     results = [p for p in mock_permits if company_name.lower() in p["company_name"].lower()]
@@ -49,18 +57,10 @@ async def get_permits_by_type(permit_type: str):
         raise HTTPException(status_code=404, detail="Permit type not found")
     return {"status": "success", "data": results}
 
-@router.get("/search")
-async def search_permits(params: PermitSearchParams = Depends()):
-    if not (params.nama or params.jenis or params.status):
-        raise HTTPException(status_code=400, detail="At least one search parameter required (nama, jenis, or status)")
-    results = []
+@router.get("/{permit_id}")
+async def get_permit_by_id(permit_id: int):
     for permit in mock_permits:
-        if params.nama and params.nama.lower() not in permit["company_name"].lower():
-            continue
-        if params.jenis and params.jenis.lower() not in permit["permit_type"].lower():
-            continue
-        if params.status and params.status.lower() not in permit["status"].lower():
-            continue
-        results.append(permit)
-    return {"status": "success", "data": results}
+        if permit["id"] == permit_id:
+            return {"status": "success", "data": permit}
+    raise HTTPException(status_code=404, detail="Permit not found")
 
