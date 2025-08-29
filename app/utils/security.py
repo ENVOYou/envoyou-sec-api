@@ -107,12 +107,15 @@ def get_rate_limit_for_key(request: Request) -> str:
 
 def rate_limit_dependency_factory():
     async def check_rate_limit(request: Request):
-        if not request.url.path.startswith("/global"):
-            return
-        client_info = getattr(request.state, "client_info", {"requests_per_minute": 30})
-        api_key = getattr(request.state, "api_key", request.client.host)
-        limit = client_info.get("requests_per_minute", 30)
-        if not simple_rate_limit(api_key, limit, 60):
+        # This dependency should be applied to protected routes, so we can expect client_info.
+        client_info = getattr(request.state, "client_info", None)
+        # Fallback to IP-based limiting if API key is not processed yet (e.g., public but limited endpoints)
+        api_key_or_ip = getattr(request.state, "api_key", request.client.host)
+        
+        # Use the tier-based limit if available, otherwise a default.
+        limit = client_info.get("requests_per_minute", 30) if client_info else 15
+
+        if not simple_rate_limit(api_key_or_ip, limit, 60):
             raise HTTPException(
                 status_code=429,
                 detail={
