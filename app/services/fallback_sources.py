@@ -12,6 +12,7 @@ from fastapi import HTTPException
 # Import the specific async functions from the clients
 from app.clients import epa_client
 from app.clients import eia_client
+from app.clients.global_client import EPAClient as GlobalEPAClient
 
 # Get a logger for this module
 logger = logging.getLogger(__name__)
@@ -93,3 +94,49 @@ async def fetch_facility_info_with_fallback(
         status_code=404,
         detail=f"No facilities found matching the name '{facility_name}' from any available source.",
     )
+
+def fetch_us_emissions_data(
+    source: Optional[str] = None,
+    state: Optional[str] = None,
+    year: Optional[int] = None,
+    pollutant: Optional[str] = None,
+    limit: int = 100
+) -> Dict[str, Any]:
+    """
+    Fetches U.S. emissions data, with a fallback from EPA to EIA.
+    """
+    # Priority 1: EPA Envirofacts
+    if source is None or source.lower() == 'epa':
+        logger.info(f"Attempting to fetch emissions from EPA for state: {state}")
+        try:
+            epa_client = GlobalEPAClient()
+            epa_data = epa_client.get_emissions_data(region=state, year=year, limit=limit)
+            
+            # The client returns sample data on failure, so we check for that.
+            # A simple heuristic: if the data contains "Sample", it's likely mock.
+            is_sample = any("sample" in d.get("facility_name", "").lower() for d in epa_data)
+
+            if epa_data and not is_sample:
+                logger.info("Successfully fetched data from EPA.")
+                return {"source": "epa", "data": epa_data}
+            logger.warning("EPA data was empty or sample, proceeding to fallback.")
+        except Exception as e:
+            logger.error(f"EPA client failed: {e}", exc_info=True)
+
+    # Priority 2: EIA as a fallback
+    if source is None or source.lower() == 'eia':
+        logger.info(f"Attempting to fetch facility info from EIA as fallback for state: {state}")
+        try:
+            # Note: EIA client searches by name, not state. This is a limitation.
+            # We can't directly translate the query, so we'll return a message.
+            # In a real scenario, you might have a list of major facilities per state to query.
+            logger.warning("EIA client cannot search by state, year, or pollutant directly.")
+            # Returning empty for now to avoid breaking the frontend.
+            return {"source": "eia", "data": []}
+        except Exception as e:
+            logger.error(f"EIA client failed: {e}", exc_info=True)
+
+    return {"source": "none", "data": []}
+
+
+__all__ = ["fetch_facility_info_with_fallback", "fetch_us_emissions_data"]

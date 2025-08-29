@@ -7,7 +7,7 @@ from typing import List, Optional
 
 from app.models.external_data import AirQualityData
 from app.services.external_api import get_api_client
-from app.utils.security import get_api_key
+from app.utils.security import require_api_key as get_api_key
 
 router = APIRouter()
 
