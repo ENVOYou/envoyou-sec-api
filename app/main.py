@@ -20,12 +20,13 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
     )
 
 # Import and include routers
-from app.routes import admin, global_data, health, permits
+from app.routes import admin, global_data, health, permits, external
 
 app.include_router(admin.router, prefix="/admin")
 app.include_router(global_data.router, prefix="/global")
 app.include_router(health.router, prefix="/health")
 app.include_router(permits.router, prefix="/permits")
+app.include_router(external.router, prefix="/external")
 
 @app.get("/")
 async def root():

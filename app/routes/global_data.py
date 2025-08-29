@@ -13,6 +13,7 @@ from app.clients.edgar_client import EDGARClient
 from app.clients.campd_client import CAMDClient
 from app.services.cevs_aggregator import compute_cevs_for_company
 from app.utils.security import require_api_key
+from app.services.fallback_sources import fetch_us_emissions_data
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -69,37 +70,42 @@ async def global_emissions(
     year: Optional[int] = Query(None, alias="year"),
     pollutant: Optional[str] = None,
     page: int = 1,
-    limit: int = 50
+    limit: int = 50,
+    source: Optional[str] = Query(None, description="Force data source (epa or eia) for debugging")
 ):
-    """EPA power plant emissions with optional filters and pagination."""
+    """
+    Provides U.S. power plant emissions data with a fallback mechanism (EPA -> EIA).
+    Includes optional filters and pagination.
+    """
     try:
-        # Validasi parameter paginasi
+        # Validate pagination parameters
         if page < 1:
             page = 1
         if limit < 1 or limit > 100:
             limit = 50
 
-        # Langkah 1: Dapatkan dataset dasar
-        # Jika ada filter 'state', kita harus mengambil data baru yang relevan.
-        # Jika tidak, kita bisa menggunakan cache umum yang lebih cepat.
-        source_data: List[Dict[str, Any]]
-        if state:
-            client = EPAClient()
-            # Ambil sejumlah besar data untuk memungkinkan pemfilteran dan paginasi yang akurat
-            raw_data = client.get_emissions_data(region=state, limit=1000)
-            logger.debug(f"Raw data from EPAClient for state={state}: {len(raw_data)} records")
-            source_data = client.format_emission_data(raw_data)
-            logger.debug(f"Source data after format_emission_data: {len(source_data)} records")
-        else:
-            source_data = _get_cached_data()
-            logger.debug(f"Source data from cache: {len(source_data)} records")
+        # Step 1: Get the base dataset using the fallback service
+        # The fallback service handles caching and fetching logic internally.
+        # We pass filters directly to the service.
+        emissions_response = fetch_us_emissions_data(
+            source=source,
+            state=state,
+            year=year,
+            pollutant=pollutant,
+            limit=1000  # Fetch a larger dataset to allow for accurate filtering and pagination
+        )
+        
+        source_data = emissions_response.get("data", [])
+        data_source_name = emissions_response.get("source", "unknown")
+        
+        logger.debug(f"Data received from source: {data_source_name}. Records: {len(source_data)}")
 
-        # Langkah 2: Terapkan semua filter ke dataset yang kita miliki
+        # Step 2: Apply all filters to the dataset we have
+        # Note: The new fallback service might already perform some filtering.
+        # This ensures consistency.
         filtered_data = [
             d for d in source_data if _matches_filters(
                 d,
-                # Teruskan semua filter. Panggilan API adalah filter utama untuk state,
-                # tetapi ini berfungsi sebagai pengaman dan menangani kasus cache tanpa state.
                 state=state,
                 year=year,
                 pollutant=pollutant)

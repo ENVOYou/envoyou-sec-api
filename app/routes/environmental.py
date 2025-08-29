@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
-from typing import Any, List
+from typing import Any, List, Optional
 
-from app.clients import epa_client
+from app.services.fallback_sources import fetch_facility_info_with_fallback
 from app.utils.security import get_api_key
 
 router = APIRouter()
@@ -10,29 +10,29 @@ router = APIRouter()
 @router.get(
     "/us/facilities/{facility_name}",
     tags=["Environmental Data"],
-    summary="Search for US facilities from EPA Envirofacts",
-    response_model=List[Any],  # Using List[Any] as the response structure can be complex
+    summary="Search for US facilities from multiple sources (EPA, EIA)",
+    response_model=List[Any], 
 )
 async def search_us_facilities(
-    facility_name: str, api_key: str = Depends(get_api_key)
+    facility_name: str, 
+    source: Optional[str] = None, # Optional query param for debugging
+    api_key: str = Depends(get_api_key)
 ):
     """
-    Search for environmental facilities in the United States using the EPA Envirofacts database.
+    Search for environmental facilities in the United States using a fallback mechanism.
 
-    This endpoint provides a proof-of-concept integration with a US-based data source.
+    The system will first query the **EPA Envirofacts** database.
+    If no results are found, it will automatically fall back to the **EIA API**.
 
     - **facility_name**: The name of the facility to search for (can be a partial name).
+    - **source**: (Optional) Force a specific data source. Accepts `epa` or `eia`. Useful for debugging.
     """
     try:
-        facilities = await epa_client.get_facility_information(facility_name)
-        if not facilities:
-            raise HTTPException(
-                status_code=404,
-                detail=f"No facilities found matching the name: {facility_name}",
-            )
+        # Pass the source parameter to the fallback service
+        facilities = await fetch_facility_info_with_fallback(facility_name, force_source=source)
         return facilities
     except HTTPException as e:
-        # Re-raise HTTPException to ensure FastAPI handles it
+        # The fallback service raises a 404 if all sources fail, which we re-raise
         raise e
     except Exception as e:
         # Catch any other unexpected errors
