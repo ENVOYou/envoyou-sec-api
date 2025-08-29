@@ -3,10 +3,14 @@ EIA Client (Async)
 Handles interactions with the U.S. Energy Information Administration (EIA) API using httpx.
 """
 
+import logging
 import os
 import httpx
 from fastapi import HTTPException
 from typing import Any, Dict, List
+
+# Get a logger for this module
+logger = logging.getLogger(__name__)
 
 # --- Configuration ---
 EIA_API_KEY = os.getenv("EIA_API_KEY")
