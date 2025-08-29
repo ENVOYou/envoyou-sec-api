@@ -49,23 +49,6 @@ First, create a `.env` file from the example template:
 cp .env.example .env
 ```
 
-Now, open the `.env` file and configure the necessary variables. At a minimum, you should set your API keys. For development, you can use the demo keys.
-
-```env
-# .env
-# --- General Server Configuration ---
-PORT=8000
-LOG_LEVEL=DEBUG
-
-# --- Security ---
-# For production, generate secure keys. See generate_keys.py
-API_KEYS="demo_key_basic_2025:DemoApp:basic,demo_key_premium_2025:PremiumApp:premium"
-MASTER_API_KEY="your_secure_master_key_for_admin_tasks"
-
-# --- External API Keys ---
-CAMPD_API_KEY="YOUR_EPA_CAMPD_API_KEY" # Get from https://www.epa.gov/airmarkets/cam-api-portal
-```
-
 ### 2. Installation
 
 Install the required Python packages:
