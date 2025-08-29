@@ -104,7 +104,7 @@ curl "http://localhost:8000/global/emissions?api_key=your_api_key_here"
 ```
 ---
 
-**CEVS Composite Score**
+**CEVS Composite Score**  
 **GET** 
 ```
 /global/cevs/{company_name}  (Returns the Composite Environmental Verification Score by combining EPA, ISO, EEA, and EDGAR data. This is the primary endpoint of the API.)

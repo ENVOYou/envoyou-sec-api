@@ -120,20 +120,21 @@ pytest
 ```
 ---
 ## Contributing
-Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
+Pull requests are welcome. For major changes, please open an [issue](https://github.com/hk-dev13/project-permit-api/issues) first to discuss what you would like to change.
 
+---
 ## License
 This project is released under the **Business Source License 1.1 (BSL-1.1)**.  
 - Non-commercial use only.  
 - Will be automatically re-licensed to **Apache 2.0** in 2028.  
 - See the [LICENSE](LICENSE) file for details.
 
-### Badges
+<!-- ### Badges
 ![License: BSL-1.1](https://img.shields.io/badge/License-BSL--1.1-blue.svg)
 ![Use: Non-Commercial](https://img.shields.io/badge/Use-Non--Commercial-orange.svg)
 ![Re-License: Apache 2.0 (2028)](https://img.shields.io/badge/Re--License-Apache%202.0%20(2028)-green.svg)
 ![Status: MVP Global](https://img.shields.io/badge/Status-MVP%20Global-brightblue.svg)
-![Build: Passing](https://img.shields.io/badge/Build-Passing-success.svg)
+![Build: Passing](https://img.shields.io/badge/Build-Passing-success.svg) -->
 
 ## Acknowledgements
 - [FastAPI](https://fastapi.tiangolo.com/)  
