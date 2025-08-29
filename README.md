@@ -2,7 +2,12 @@
 
 [![Python Version](https://img.shields.io/badge/python-3.12-blue.svg)](https://www.python.org/downloads/release/python-3120/)
 [![Framework](https://img.shields.io/badge/framework-FastAPI-green.svg)](https://fastapi.tiangolo.com/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+<!-- [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) -->
+![Badge showing license type Business Source License 1.1 in blue color](https://img.shields.io/badge/License-BSL--1.1-blue.svg) 
+![Badge showing usage status Non-Commercial in orange color](https://img.shields.io/badge/Use-Non--Commercial-orange.svg)
+![Badge showing re-license to Apache 2.0 scheduled for 2028 in green color](https://img.shields.io/badge/Re--License-Apache%202.0%20(2028)-green.svg)
+![Badge showing project status MVP Global in brightblue color](https://img.shields.io/badge/Status-MVP%20Global-brightblue.svg)
+![Badge showing build passing in success green color](https://img.shields.io/badge/Build-Passing-success.svg)
 
 The official backend API for the [Envoyou](https://envoyou.com) platform. This service aggregates environmental data from multiple global sources to calculate a **Composite Environmental Verification Score (CEVS)**, providing a standardized metric for corporate environmental performance.
 
@@ -113,3 +118,32 @@ The project uses `pytest` for testing.
 ```bash
 pytest
 ```
+---
+## Contributing
+Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
+
+## License
+This project is released under the **Business Source License 1.1 (BSL-1.1)**.  
+- Non-commercial use only.  
+- Will be automatically re-licensed to **Apache 2.0** in 2028.  
+- See the [LICENSE](LICENSE) file for details.
+
+### Badges
+![License: BSL-1.1](https://img.shields.io/badge/License-BSL--1.1-blue.svg)
+![Use: Non-Commercial](https://img.shields.io/badge/Use-Non--Commercial-orange.svg)
+![Re-License: Apache 2.0 (2028)](https://img.shields.io/badge/Re--License-Apache%202.0%20(2028)-green.svg)
+![Status: MVP Global](https://img.shields.io/badge/Status-MVP%20Global-brightblue.svg)
+![Build: Passing](https://img.shields.io/badge/Build-Passing-success.svg)
+
+## Acknowledgements
+- [FastAPI](https://fastapi.tiangolo.com/)  
+- [Uvicorn](https://www.uvicorn.org/)  
+- [Pydantic](https://docs.pydantic.dev/)  
+
+## Contact
+Maintained by [Husni Kusuma](https://github.com/hk-dev13)  
+🌐 Website: [envoyou.com](https://envoyou.com)  
+📧 More info: [info@envoyou.com](mailto:info@envoyou.com)  
+
+---
+Made with ❤️ by [Envoyou](https://envoyou.com) — Empowering Global Environmental Transparency 🌍
