@@ -1,6 +1,6 @@
 # Production Deployment Checklist for AWS App Runner
 
-## 🔐 URGENT: Credentials Security Update
+## 🔐 URGENT: Credentials Security Update (status done)
 
 ### Current Status (August 20, 2025):
 - ⚠️ **EXPOSED KEYS**: `AKIASE3CDFQSGGXR5YLB` dan `AKIASE3CDFQSGZA4NX6Z` 
@@ -156,7 +156,7 @@ curl -H "Authorization: Bearer your_prod_premium_key" \
 
 ### Environment Variables Explanation
 ```bash
-# Core Flask settings
+# Core Flask settings (not available for now)
 FLASK_ENV=production          # Enables production optimizations
 FLASK_DEBUG=0                # Disables debug mode and error traces
 PORT=8000                    # App Runner default port

@@ -2,7 +2,7 @@
 
 ## 🌐 Custom Domain Setup
 
-### Current Status
+### Current Status for test.
 - ✅ API Live: `https://j8w3vpxvpb.ap-southeast-2.awsapprunner.com`
 - ✅ SSL Certificate: Auto-managed by AWS
 - ✅ Production Ready: All endpoints working

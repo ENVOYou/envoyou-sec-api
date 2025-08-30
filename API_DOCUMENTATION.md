@@ -31,8 +31,8 @@ Key capabilities include:
  
 **For Development/Testing:**
 Use the demo keys provided:
-- **Basic Tier**: `demo_key_basic_2025` (30 requests/minute)
-- **Premium Tier**: `demo_key_premium_2025` (100 requests/minute)
+- **Basic Tier**: `demo_key_basic_2025` (100 requests/hour)
+- **Premium Tier**: `demo_key_premium_2025` (1000 requests/hour)
 
 **For Production:**
 Contact the API administrator to get your production API key.

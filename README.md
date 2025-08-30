@@ -15,6 +15,10 @@ The official backend API for the [Envoyou](https://envoyou.com) platform. This s
 
 The CEVS Aggregator API acts as a robust data pipeline and scoring engine. It connects to various official data sources (e.g., EPA, EEA, ISO), normalizes the incoming data into a consistent schema, and applies a sophisticated scoring algorithm to generate the CEVS for a given company.
 
+## 🌍 Project Summary
+
+For detailed information on all Project, please refer to the official **[Project Summary](PROJECT_SUMMARY.md)**.
+
 ## ✨ Key Features
 
 - **Multi-Source Data Aggregation**: Integrates with key environmental data providers:
