@@ -1,0 +1,53 @@
+# Default behavior: auto-normalize line endings
+* text=auto
+
+# === Scripts ===
+*.sh   text eol=lf        
+*.bash text eol=lf
+*.bat  text eol=crlf      
+*.cmd  text eol=crlf
+*.ps1  text eol=crlf
+
+# === Python source code ===
+*.py   text eol=lf
+*.pyi  text eol=lf
+*.toml text eol=lf
+*.ini  text eol=lf
+*.cfg  text eol=lf
+
+# === FastAPI/OpenAPI/Schema files ===
+*.json text eol=lf
+*.yaml text eol=lf
+*.yml  text eol=lf
+
+# === Documentation ===
+*.md   text eol=lf
+*.rst  text eol=lf
+*.txt  text eol=lf
+
+# === Requirements / Env ===
+requirements*.txt text eol=lf
+*.env   text eol=lf
+
+# === Docker / Compose ===
+Dockerfile text eol=lf
+*.dockerignore text eol=lf
+docker-compose*.yml text eol=lf
+
+# === Database dumps / schemas ===
+*.sql   text eol=lf
+*.dump  text eol=lf
+
+# === Binary files ===
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.gif   binary
+*.ico   binary
+*.pdf   binary
+*.zip   binary
+*.tar   binary
+*.gz    binary
+*.7z    binary
+*.db    binary
+*.sqlite binary
