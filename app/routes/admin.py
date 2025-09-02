@@ -91,20 +91,31 @@ async def api_stats(request: Request):
     if client_info.get("tier") != "premium":
         raise HTTPException(status_code=403, detail="Admin privileges required")
 
-    return JSONResponse(content={
-        "status": "success",
-        "data": {
-            "total_api_keys": len(VALID_API_KEYS),
-            "tiers": {
-                "basic": len([k for k, v in VALID_API_KEYS.items() if v.get("tier") == "basic"]),
-                "premium": len([k for k, v in VALID_API_KEYS.items() if v.get("tier") == "premium"])
+@router.post("/request-demo-key")
+async def request_demo_key(data: Dict[str, Any]):
+    """Request a demo API key (no authentication required)."""
+    client_name = data.get("client_name", "Demo User")
+    tier = "basic"  # Demo keys are always basic tier
+    
+    if not client_name:
+        raise HTTPException(status_code=400, detail="client_name is required")
+    
+    try:
+        new_key = generate_api_key(client_name, tier)
+        return JSONResponse(content={
+            "status": "success",
+            "data": {
+                "api_key": new_key,
+                "client_name": client_name,
+                "tier": tier,
+                "created": datetime.now().isoformat(),
+                "requests_per_minute": 30,
+                "note": "This is a demo API key. For production use, contact admin for premium key."
             },
-            "system_info": {
-                "version": "1.0.0",
-                "environment": "development"
-            }
-        },
-        "timestamp": datetime.now().isoformat()
-    })
+            "message": "Demo API key created successfully"
+        })
+    except Exception as e:
+        logger.error(f"Error creating demo API key: {e}")
+        raise HTTPException(status_code=500, detail="Failed to create demo API key")
 
 __all__ = ["router"]

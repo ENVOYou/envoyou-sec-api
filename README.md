@@ -21,13 +21,19 @@ For detailed information on all Project, please refer to the official **[Project
 
 ## ✨ Key Features
 
+## ✨ Key Features
+
 - **Multi-Source Data Aggregation**: Integrates with key environmental data providers:
   - **EPA (USA)**: Facility and power plant emissions data (Envirofacts, CAMPD).
   - **EEA (Europe)**: Industrial pollution and renewable energy statistics.
   - **EDGAR**: Global urban emissions data.
-  - **ISO**: ISO 14001 certification status.
+  - **ISO**: ISO 14001 certification status (40+ certificates integrated).
 - **Composite Environmental Verification Score (CEVS)**: A proprietary scoring model that provides a holistic view of a company's environmental impact and commitment.
 - **Secure API Access**: All critical endpoints are protected by API key authentication.
+- **Frontend Integration Ready**: Pre-configured CORS for React/Vite applications with demo API keys.
+- **Real-time CEVS Scoring**: Live calculation with comprehensive environmental data (score range: 0-100).
+- **Demo API Key System**: Built-in endpoint for generating demo keys for frontend development.
+- **Comprehensive Permit Management**: Full CRUD operations for environmental permits with search and filtering.
 - **Tier-Based Rate Limiting**: Different usage tiers (Basic, Premium) to manage API load.
 - **Robust Caching**: In-memory and file-based caching for improved performance and reduced external API calls.
 - **Standardized Data Schemas**: All data is normalized into a clean, predictable format.
@@ -41,9 +47,9 @@ For detailed information on all available endpoints, request/response formats, a
 ## 🚀 Getting Started
 
 ### Prerequisites
-
 - Python 3.10+
 - Docker & Docker Compose (Recommended)
+- Node.js 18+ & npm (for frontend development)
 
 ### 1. Environment Setup
 
@@ -86,6 +92,42 @@ docker-compose logs -f
 
 # Stop the services
 docker-compose down
+```
+
+## 🌐 Frontend Integration
+
+### React + Vite Setup
+
+The API is designed to work seamlessly with modern frontend frameworks:
+
+1. **CORS Configuration**: Pre-configured for local development with Vite (port 5173)
+2. **Demo API Keys**: Built-in demo keys for frontend development
+3. **Real-time Data**: Live CEVS scoring with 40+ ISO certificates integration
+
+#### Example Frontend Integration
+
+```javascript
+// vite.config.js
+export default defineConfig({
+  plugins: [react()],
+  server: {
+    proxy: {
+      '/api': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api/, '')
+      }
+    }
+  }
+})
+```
+
+#### Getting Demo API Key
+
+```bash
+curl -X POST http://localhost:8000/admin/request-demo-key 
+  -H "Content-Type: application/json" 
+  -d '{"tier": "premium"}'
 ```
 
 ## ⚙️ Configuration

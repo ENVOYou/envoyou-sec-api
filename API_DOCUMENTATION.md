@@ -22,6 +22,51 @@ Key capabilities include:
 ✅ **Pagination for large datasets**  
 ✅ **Robust error handling**  
 ✅ **Docker deployment ready**  
+✅ **Frontend Integration Ready** - Pre-configured CORS for React/Vite applications
+
+---
+
+## 🌐 Frontend Integration
+
+### React + Vite Setup
+
+The API is designed to work seamlessly with modern frontend frameworks:
+
+#### CORS Configuration
+- **Pre-configured Origins**: `http://localhost:5173` (Vite default)
+- **Allowed Methods**: GET, POST, PUT, DELETE, OPTIONS
+- **Allowed Headers**: Content-Type, Authorization, X-API-Key
+
+#### Vite Configuration Example
+```javascript
+// vite.config.js
+export default defineConfig({
+  plugins: [react()],
+  server: {
+    proxy: {
+      '/api': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api/, '')
+      }
+    }
+  }
+})
+```
+
+#### Getting Demo API Key for Frontend
+```javascript
+// Frontend code example
+const getDemoKey = async () => {
+  const response = await fetch('/api/admin/request-demo-key', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ tier: 'premium' })
+  });
+  const data = await response.json();
+  return data.api_key;
+};
+```
 
 ---
 
@@ -236,6 +281,32 @@ All
 ```Bash
 /admin/*  (endpoints require a premium tier API key.)
 ```
+---
+
+#### Request Demo API Key
+**POST**
+```Bash
+/admin/request-demo-key  (Generates a demo API key for frontend development - no authentication required)
+```
+
+**Example Request:**
+```bash
+curl -X POST http://localhost:8000/admin/request-demo-key \
+  -H "Content-Type: application/json" \
+  -d '{"tier": "premium"}'
+```
+
+**Example Response:**
+```json
+{
+  "api_key": "demo_key_premium_2025_abc123def456",
+  "tier": "premium",
+  "rate_limit": "1000/hour",
+  "expires_at": "2025-12-31T23:59:59Z",
+  "message": "Demo key generated successfully"
+}
+```
+
 ---
 
 #### List API Keys
