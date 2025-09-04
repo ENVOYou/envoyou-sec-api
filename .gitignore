@@ -3,6 +3,8 @@
 # Ignore production API keys file
 production_keys.json
 # render.yaml is now safe with generateValue: true for all sensitive keys
+# Ignore Railway environment file
+.env.railway
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
