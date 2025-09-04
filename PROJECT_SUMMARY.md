@@ -490,3 +490,7 @@ The project has successfully transitioned from development to production-ready M
 ---
 
 This project focuses on **environmental data verification** with **multi-source standardization** and **scoring transparency** as its key differentiators.
+
+---
+> <p style="text-align: center;">© 2025 <a href="https://envoyou.com">Envoyou</a> | All Rights Reserved</p>
+> <p style="text-align: center;">Empowering Global Environmental Transparency</p>

@@ -176,4 +176,5 @@ Maintained by [Husni Kusuma](https://github.com/hk-dev13)
 📧 More info: [info@envoyou.com](mailto:info@envoyou.com)  
 
 ---
-Made with ❤️ by [Envoyou](https://envoyou.com) — Empowering Global Environmental Transparency 🌍
+> <p style="text-align: center;">© 2025 <a href="https://envoyou.com">Envoyou</a> | All Rights Reserved</p>
+> <p style="text-align: center;">Empowering Global Environmental Transparency</p>

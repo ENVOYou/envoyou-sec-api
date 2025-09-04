@@ -19,8 +19,10 @@ On **2028-01-01**, this project will be automatically re-licensed as
 For production or commercial usage, please contact:
 
 **Husni Kusuma (hk-dev13)**  
-✉️ Email: [your-email-here]  
+✉️ Email: [info@envoyou.com](mailto:info@envoyou.com)  
+🌐 Website: [envoyou.com](https://envoyou.com)]  
 
 ---
 
-Made with ❤️ for global environmental data transparency 🌍
+> <p style="text-align: center;">© 2025 <a href="https://envoyou.com">Envoyou</a> | All Rights Reserved</p>
+> <p style="text-align: center;">Empowering Global Environmental Transparency</p>
