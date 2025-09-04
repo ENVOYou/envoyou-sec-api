@@ -5,10 +5,11 @@ services:
   permit-api:
     build: .
     ports:
-      - "5000:5000"
+      - "8000:8000"
     environment:
-      - FLASK_ENV=development
-      - FLASK_DEBUG=1
+      - PYTHONPATH=/app
+      - PYTHONDONTWRITEBYTECODE=1
+      - PYTHONUNBUFFERED=1
       - API_KEYS=${API_KEYS}
       - MASTER_API_KEY=${MASTER_API_KEY}
     volumes:
@@ -18,7 +19,7 @@ services:
       - ./logs:/app/logs
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s
       timeout: 10s
       retries: 3
