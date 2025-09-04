@@ -26,7 +26,7 @@ services:
       - key: CORS_ORIGINS
         value: https://your-frontend-domain.com,https://envoyou.com
       - key: API_KEYS
-        value: basic_13DtDjreOdn3iZQFS20jqMdg2vU9wLuchezkio2u:ProductionBasic:basic,premium_RHTg5KowgX4kFilyzC8XoLgKrQ2dyQF8kP0Va4t7:ProductionPremium:premium,enterprise_lZBrYMvmCgEcWPdyqlGmhFL5h28bfNN26qu63Ne8:ProductionEnterprise:enterprise
+        generateValue: true
       - key: CAMPD_API_KEY
         value: nANGR3eBqPq0agXJH3X0LFTk0YxbMICAfc9jOKgT
       - key: EIA_API_KEY
