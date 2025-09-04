@@ -28,6 +28,7 @@ For detailed information on all Project, please refer to the official **[Project
   - **EEA (Europe)**: Industrial pollution and renewable energy statistics.
   - **EDGAR**: Global urban emissions data.
   - **ISO**: ISO 14001 certification status (40+ certificates integrated).
+  - **Amdalnet (Indonesia)**: Environmental permits and approvals from KLHK (integrated with dev API).
 - **Composite Environmental Verification Score (CEVS)**: A proprietary scoring model that provides a holistic view of a company's environmental impact and commitment.
 - **Secure API Access**: All critical endpoints are protected by API key authentication.
 - **Frontend Integration Ready**: Pre-configured CORS for React/Vite applications with demo API keys.
@@ -124,10 +125,56 @@ export default defineConfig({
 
 #### Getting Demo API Key
 
+```javascript
+// Frontend code example
+const getDemoKey = async () => {
+  const response = await fetch('/api/admin/request-demo-key', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ tier: 'premium' })
+  });
+  const data = await response.json();
+  return data.api_key;
+};
+```
+
+## 🌍 Amdalnet Integration
+
+### Indonesian Environmental Data
+
+The API integrates with **Amdalnet** (KLHK - Kementerian Lingkungan Hidup dan Kehutanan) to provide real environmental permit data from Indonesia.
+
+#### Available Endpoints
+- **SK Final**: Environmental permits and approvals
+- **Pemrakarsa**: Business entities with environmental permits
+- **Rencana Usaha**: Business plans and activities
+- **Map Services**: Geographic project boundaries
+
+#### API Configuration
 ```bash
-curl -X POST http://localhost:8000/admin/request-demo-key 
-  -H "Content-Type: application/json" 
-  -d '{"tier": "premium"}'
+# Set your Amdalnet credentials in .env
+AMDALNET_API_URL=https://amdalnet-dev.kemenlh.go.id
+AMDALNET_API_KEY=your_token_here
+AMDALNET_SSO_USERNAME=your_username
+AMDALNET_SSO_PASSWORD=your_password
+```
+
+#### Getting API Access
+1. **Register** at [Amdalnet SSO](https://amdalnet-dev.kemenlh.go.id)
+2. **Login** to get authentication token
+3. **Configure** token in environment variables
+4. **Test** integration with `/permits` endpoint
+
+#### Example Usage
+```python
+from app.clients.amdalnet_client import AmdalnetClient
+
+# Initialize client
+client = AmdalnetClient(api_key="your_token")
+
+# Get environmental permits
+permits = client.get_sk_final(page=1, limit=50)
+print(f"Found {len(permits)} permits")
 ```
 
 ## ⚙️ Configuration
