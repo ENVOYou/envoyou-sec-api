@@ -51,12 +51,12 @@ ENV PYTHONPATH=/app
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
-# Expose port
-EXPOSE 8000
+# Expose port (Railway will assign dynamic port)
+EXPOSE $PORT
 
-# Health check
+# Health check (use Railway's assigned port)
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:8000/health || exit 1
+    CMD curl -f http://localhost:$PORT/health || exit 1
 
-# Default command - FastAPI with uvicorn
-CMD ["uvicorn", "app.api_server:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1"]
+# Default command - FastAPI with uvicorn (use Railway's assigned port)
+CMD uvicorn app.api_server:app --host 0.0.0.0 --port $PORT --workers 1
