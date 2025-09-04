@@ -2,8 +2,7 @@
 .env.production.keys
 # Ignore production API keys file
 production_keys.json
-# Ignore deployment configuration files (may contain sensitive data)
-render.yaml
+# render.yaml is now safe with generateValue: true for all sensitive keys
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
