@@ -8,6 +8,7 @@ from datetime import datetime
 
 from ..models.database import get_db
 from ..models.user import User
+from ..models.api_key import APIKey
 from ..models.session import Session
 from ..utils.jwt import create_access_token, create_refresh_token, verify_token
 from ..utils.email import email_service
@@ -46,6 +47,18 @@ class TwoFASetupResponse(BaseModel):
 
 class TwoFAVerifyRequest(BaseModel):
     code: str
+
+class FreeAPIKeyRequest(BaseModel):
+    email: EmailStr
+    name: Optional[str] = None
+    company: Optional[str] = None
+
+class FreeAPIKeyResponse(BaseModel):
+    success: bool
+    message: str
+    api_key: Optional[str] = None
+    key_prefix: Optional[str] = None
+    user_id: Optional[str] = None
 
 def validate_password(password: str) -> bool:
     """Validate password strength"""
@@ -499,4 +512,95 @@ async def disable_2fa(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid 2FA code"
+        )
+
+@router.post("/request-free-api-key", response_model=FreeAPIKeyResponse)
+async def request_free_api_key(
+    request: FreeAPIKeyRequest,
+    db: Session = Depends(get_db)
+):
+    """Request free API key without registration (public endpoint)"""
+    try:
+        # Check if user already exists
+        existing_user = db.query(User).filter(User.email == request.email).first()
+        
+        if existing_user:
+            # User exists, check if they already have an API key
+            existing_api_key = db.query(APIKey).filter(
+                APIKey.user_id == existing_user.id,
+                APIKey.is_active == True
+            ).first()
+            
+            if existing_api_key:
+                return FreeAPIKeyResponse(
+                    success=False,
+                    message="You already have an active API key. Please check your email or contact support.",
+                    api_key=None,
+                    key_prefix=existing_api_key.prefix,
+                    user_id=existing_user.id
+                )
+            
+            # Create new API key for existing user
+            user_id = existing_user.id
+            user_name = existing_user.name
+            user_email = existing_user.email
+            
+        else:
+            # Create new user for free API key
+            new_user = User(
+                email=request.email,
+                name=request.name or f"Free User - {request.email.split('@')[0]}",
+                company=request.company or "Free User",
+                password_hash="",  # No password for free users
+                is_active=True,
+                email_verified=True,  # Auto-verify for free users
+                role="free"
+            )
+            
+            db.add(new_user)
+            db.commit()
+            db.refresh(new_user)
+            
+            user_id = new_user.id
+            user_name = new_user.name
+            user_email = new_user.email
+        
+        # Create free API key
+        api_key = APIKey(
+            user_id=user_id,
+            name="Free API Key",
+            permissions=["read"]  # Limited permissions for free users
+        )
+        
+        # Generate the actual key
+        actual_key = api_key._generate_key()
+        
+        db.add(api_key)
+        db.commit()
+        db.refresh(api_key)
+        
+        # Send welcome email with API key
+        try:
+            from app.utils.email import email_service
+            api_key_preview = f"{actual_key[:8]}...{actual_key[-4:]}"
+            email_service.send_free_api_key_notification(
+                user_email, user_name, actual_key, api_key.prefix
+            )
+        except Exception as e:
+            # Don't fail API key creation if email fails
+            print(f"Free API key email failed: {e}")
+        
+        return FreeAPIKeyResponse(
+            success=True,
+            message="Free API key created successfully! Please check your email for the complete key.",
+            api_key=actual_key,  # Only shown once
+            key_prefix=api_key.prefix,
+            user_id=user_id
+        )
+        
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to create free API key: {str(e)}"
         )
