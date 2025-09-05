@@ -2,7 +2,24 @@ from fastapi import FastAPI, Request, HTTPException, status, Depends
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
-from fastapi.openapi.utils import get_openapi # Keep this for custom_openapi
+from fastapi.openapi.utils import get_openapi
+from fastapi.staticfiles import StaticFiles
+
+app = FastAPI(
+    title="Environmental Data Verification API",
+    description="Production API for environmental data verification and compliance checking with multi-source data integration",
+    version="1.0.0",
+    contact={
+            "name": "API Support",
+            "email": "support@environmentalapi.com"
+    },
+    terms_of_service="https://j8w3vpxvpb.ap-southeast-2.awsapprunner.com/terms"
+)
+
+# Mount static files for uploads
+app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
+
+# CORS
 import logging
 import os
 from app.config import settings # Import settings object
@@ -15,6 +32,7 @@ from app.routes.permits import router as permits_router
 from app.routes.global_data import router as global_router
 from app.routes.admin import router as admin_router
 from app.routes.auth import router as auth_router
+from app.routes.user import router as user_router
 
 # Import security utilities
 from app.utils.security import is_public_endpoint, validate_api_key, rate_limit_dependency_factory
@@ -41,7 +59,7 @@ app.add_middleware(
     allow_origins=cors_origins, # Use the parsed origins
     allow_credentials=True,
     allow_methods=["*"],
-    allow_headers=["Content-Type", "Authorization", "X-API-Key"],
+    allow_headers=["Content-Type", "Authorization", "X-API-Key", "X-Requested-With"],
 )
 
 # GZIP for response compression
@@ -69,7 +87,8 @@ logger = logging.getLogger(__name__)
 async def api_key_dependency(request: Request):
     public_paths = [
         "/health", "/", "/docs", "/openapi.json", "/redoc",
-        "/auth/register", "/auth/login", "/auth/refresh", "/auth/logout"
+        "/auth/register", "/auth/login", "/auth/refresh", "/auth/logout",
+        "/auth/send-verification", "/auth/verify-email", "/auth/forgot-password", "/auth/reset-password"
         ]
     path = request.url.path
     if not any(path == pub_path or path.startswith(pub_path + "/") for pub_path in public_paths):
@@ -118,7 +137,8 @@ def custom_openapi():
         routes=app.routes,
         tags=[
             {"name": "Health", "description": "Service health and status endpoints"},
-            {"name": "Authentication", "description": "User authentication endpoints"},
+            {"name": "Authentication", "description": "User authentication and account management endpoints"},
+            {"name": "User Profile", "description": "User profile management endpoints"},
             {"name": "Global Data", "description": "Global environmental data endpoints"},
             {"name": "Admin", "description": "Administrative and statistics endpoints"}
         ]
@@ -143,6 +163,7 @@ rate_limiter = rate_limit_dependency_factory()
 app.include_router(global_router, prefix="/global", dependencies=[Depends(api_key_dependency), Depends(rate_limiter)])
 app.include_router(admin_router, prefix="/admin")
 app.include_router(auth_router, prefix="/auth")
+app.include_router(user_router, prefix="/user")
 
 @app.get("/", tags=["Health"])
 async def home():
@@ -223,6 +244,14 @@ async def print_startup_info():
     print("  POST /auth/login           - User login")
     print("  POST /auth/refresh         - Refresh access token")
     print("  POST /auth/logout          - User logout")
+    print("  POST /auth/send-verification - Send email verification")
+    print("  POST /auth/verify-email    - Verify email with token")
+    print("  POST /auth/forgot-password - Request password reset")
+    print("  POST /auth/reset-password  - Reset password with token")
+    print("  POST /auth/change-password - Change password (authenticated)")
+    print("  GET  /user/profile         - Get user profile (authenticated)")
+    print("  PUT  /user/profile         - Update user profile (authenticated)")
+    print("  POST /user/avatar          - Upload user avatar (authenticated)")
     print("  GET  /permits              - Get all permits")
     print("  GET  /permits/search       - Search permits")
     print("  GET  /permits/active       - Get active permits")
