@@ -9,6 +9,7 @@ from ..models.database import get_db
 from ..models.user import User
 from ..utils.jwt import create_access_token, create_refresh_token, verify_token
 from ..utils.email import email_service
+from ..utils.email import email_service
 
 router = APIRouter()
 security = HTTPBearer()
@@ -36,6 +37,13 @@ class RefreshTokenRequest(BaseModel):
 
 class MessageResponse(BaseModel):
     message: str
+
+class TwoFASetupResponse(BaseModel):
+    secret: str
+    qr_code_url: str
+
+class TwoFAVerifyRequest(BaseModel):
+    code: str
 
 def validate_password(password: str) -> bool:
     """Validate password strength"""
@@ -309,7 +317,7 @@ async def change_password(
     
     return MessageResponse(message="Password changed successfully")
 
-# Dependency to get current user from token
+# Dependency to get current user
 async def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(security),
     db: Session = Depends(get_db)
@@ -330,3 +338,99 @@ async def get_current_user(
         )
     
     return user
+
+# Two-Factor Authentication Endpoints
+@router.post("/2fa/setup", response_model=TwoFASetupResponse)
+async def setup_2fa(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Setup 2FA for user"""
+    if current_user.two_factor_enabled:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="2FA is already enabled"
+        )
+    
+    try:
+        import pyotp
+        import qrcode
+        import io
+        import base64
+    except ImportError:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="2FA dependencies not installed"
+        )
+    
+    # Generate secret
+    secret = pyotp.random_base32()
+    
+    # Setup TOTP
+    totp = pyotp.TOTP(secret)
+    
+    # Generate QR code URL
+    qr_code_url = totp.provisioning_uri(
+        name=current_user.email,
+        issuer_name="EnvoyOU"
+    )
+    
+    # Store secret temporarily (don't enable yet)
+    current_user.setup_2fa(secret)
+    db.commit()
+    
+    return TwoFASetupResponse(
+        secret=secret,
+        qr_code_url=qr_code_url
+    )
+
+@router.post("/2fa/verify", response_model=MessageResponse)
+async def verify_2fa(
+    request: TwoFAVerifyRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Verify 2FA setup with code"""
+    if not current_user.two_factor_secret:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="2FA setup not initiated"
+        )
+    
+    if current_user.two_factor_enabled:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="2FA is already enabled"
+        )
+    
+    # Verify the code
+    if current_user.verify_2fa_code(request.code):
+        current_user.enable_2fa()
+        db.commit()
+        return MessageResponse(message="2FA enabled successfully")
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid 2FA code"
+        )
+
+@router.post("/2fa/disable", response_model=MessageResponse)
+async def disable_2fa(
+    request: TwoFAVerifyRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Disable 2FA"""
+    if not current_user.two_factor_enabled:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="2FA is not enabled"
+        )
+    
+    # Verify current 2FA code before disabling
+    if current_user.verify_2fa_code(request.code):
+        current_user.disable_2fa()
+        db.commit()
+        return MessageResponse(message="2FA disabled successfully")
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid 2FA code"
+        )

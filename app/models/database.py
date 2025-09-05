@@ -20,7 +20,7 @@ else:
 # Create SessionLocal class
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-def get_db() -> Session:
+def get_db():
     """Dependency to get database session"""
     db = SessionLocal()
     try:
@@ -31,4 +31,8 @@ def get_db() -> Session:
 def create_tables():
     """Create all database tables"""
     from .user import Base
+    from .api_key import Base as APIKeyBase
+    
+    # Create tables for both bases
     Base.metadata.create_all(bind=engine)
+    APIKeyBase.metadata.create_all(bind=engine)

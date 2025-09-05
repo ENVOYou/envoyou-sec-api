@@ -88,7 +88,8 @@ async def api_key_dependency(request: Request):
     public_paths = [
         "/health", "/", "/docs", "/openapi.json", "/redoc",
         "/auth/register", "/auth/login", "/auth/refresh", "/auth/logout",
-        "/auth/send-verification", "/auth/verify-email", "/auth/forgot-password", "/auth/reset-password"
+        "/auth/send-verification", "/auth/verify-email", "/auth/forgot-password", "/auth/reset-password",
+        "/auth/2fa/setup", "/auth/2fa/verify", "/auth/2fa/disable"
         ]
     path = request.url.path
     if not any(path == pub_path or path.startswith(pub_path + "/") for pub_path in public_paths):
@@ -139,6 +140,8 @@ def custom_openapi():
             {"name": "Health", "description": "Service health and status endpoints"},
             {"name": "Authentication", "description": "User authentication and account management endpoints"},
             {"name": "User Profile", "description": "User profile management endpoints"},
+            {"name": "API Keys", "description": "API key management endpoints"},
+            {"name": "Two-Factor Auth", "description": "Two-factor authentication endpoints"},
             {"name": "Global Data", "description": "Global environmental data endpoints"},
             {"name": "Admin", "description": "Administrative and statistics endpoints"}
         ]
@@ -252,6 +255,12 @@ async def print_startup_info():
     print("  GET  /user/profile         - Get user profile (authenticated)")
     print("  PUT  /user/profile         - Update user profile (authenticated)")
     print("  POST /user/avatar          - Upload user avatar (authenticated)")
+    print("  GET  /user/api-keys        - Get API keys (authenticated)")
+    print("  POST /user/api-keys        - Create API key (authenticated)")
+    print("  DELETE /user/api-keys/{id} - Delete API key (authenticated)")
+    print("  POST /auth/2fa/setup       - Setup 2FA (authenticated)")
+    print("  POST /auth/2fa/verify      - Verify 2FA (authenticated)")
+    print("  POST /auth/2fa/disable     - Disable 2FA (authenticated)")
     print("  GET  /permits              - Get all permits")
     print("  GET  /permits/search       - Search permits")
     print("  GET  /permits/active       - Get active permits")

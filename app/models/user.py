@@ -1,5 +1,6 @@
 from sqlalchemy import Column, Integer, String, Boolean, DateTime, func
 from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import relationship
 from passlib.context import CryptContext
 import uuid
 from datetime import datetime, timedelta
@@ -26,8 +27,13 @@ class User(Base):
     password_reset_token = Column(String)
     password_reset_expires = Column(DateTime(timezone=True))
     last_login = Column(DateTime(timezone=True))
+    two_factor_secret = Column(String)
+    two_factor_enabled = Column(Boolean, default=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+    
+    # Relationships
+    api_keys = relationship("APIKey", back_populates="user", cascade="all, delete-orphan")
     
     def set_password(self, password: str):
         """Hash and set the user's password"""
@@ -72,6 +78,32 @@ class User(Base):
         """Update last login timestamp"""
         self.last_login = datetime.utcnow()
     
+    def setup_2fa(self, secret: str):
+        """Setup 2FA with secret"""
+        self.two_factor_secret = secret
+        # Don't enable yet, wait for verification
+    
+    def enable_2fa(self):
+        """Enable 2FA after verification"""
+        self.two_factor_enabled = True
+    
+    def disable_2fa(self):
+        """Disable 2FA"""
+        self.two_factor_enabled = False
+        self.two_factor_secret = None
+    
+    def verify_2fa_code(self, code: str) -> bool:
+        """Verify 2FA code"""
+        if not self.two_factor_secret or not self.two_factor_enabled:
+            return False
+        
+        try:
+            import pyotp
+            totp = pyotp.TOTP(self.two_factor_secret)
+            return totp.verify(code)
+        except:
+            return False
+    
     def to_dict(self):
         """Convert user object to dictionary (without password)"""
         return {
@@ -83,6 +115,7 @@ class User(Base):
             "avatar_url": self.avatar_url,
             "timezone": self.timezone,
             "email_verified": self.email_verified,
+            "two_factor_enabled": self.two_factor_enabled,
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "last_login": self.last_login.isoformat() if self.last_login else None
         }
