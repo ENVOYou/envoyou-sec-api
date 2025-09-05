@@ -10,6 +10,7 @@ from datetime import datetime
 from ..models.database import get_db
 from ..models.user import User
 from ..models.api_key import APIKey
+from ..models.session import Session
 from ..utils.jwt import verify_token
 
 router = APIRouter()
@@ -57,6 +58,17 @@ class APIKeyCreateResponse(BaseModel):
     key: str  # Only shown once during creation
     prefix: str
     permissions: list
+
+class SessionResponse(BaseModel):
+    id: str
+    device: str
+    ip: str
+    location: str
+    last_active: Optional[str]
+    current: bool
+
+class SessionListResponse(BaseModel):
+    sessions: list[SessionResponse]
 
 # Dependency to get current user
 async def get_current_user(
@@ -222,4 +234,54 @@ async def delete_api_key(
     api_key.is_active = False
     db.commit()
     
-    return {"message": "API key deleted successfully"}
+    return {
+        "message": "API key deleted successfully"
+    }
+
+@router.get("/sessions", response_model=SessionListResponse)
+async def get_user_sessions(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get all active sessions for current user"""
+    sessions = db.query(Session).filter(
+        Session.user_id == current_user.id,
+        Session.expires_at > datetime.utcnow()
+    ).order_by(Session.last_active.desc()).all()
+    
+    session_responses = []
+    for session in sessions:
+        session_dict = session.to_dict()
+        # Mark current session (this would need to be determined from request context)
+        # For now, we'll mark the most recent one as current
+        session_dict["current"] = False
+        session_responses.append(SessionResponse(**session_dict))
+    
+    # Mark the first (most recent) session as current
+    if session_responses:
+        session_responses[0].current = True
+    
+    return SessionListResponse(sessions=session_responses)
+
+@router.delete("/sessions/{session_id}")
+async def delete_user_session(
+    session_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Delete a specific session"""
+    session = db.query(Session).filter(
+        Session.id == session_id,
+        Session.user_id == current_user.id
+    ).first()
+    
+    if not session:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Session not found"
+        )
+    
+    db.delete(session)
+    db.commit()
+    
+    return {"message": "Session deleted successfully"}

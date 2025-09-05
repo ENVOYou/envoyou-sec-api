@@ -141,6 +141,7 @@ def custom_openapi():
             {"name": "Authentication", "description": "User authentication and account management endpoints"},
             {"name": "User Profile", "description": "User profile management endpoints"},
             {"name": "API Keys", "description": "API key management endpoints"},
+            {"name": "Sessions", "description": "User session management endpoints"},
             {"name": "Two-Factor Auth", "description": "Two-factor authentication endpoints"},
             {"name": "Global Data", "description": "Global environmental data endpoints"},
             {"name": "Admin", "description": "Administrative and statistics endpoints"}
@@ -258,6 +259,8 @@ async def print_startup_info():
     print("  GET  /user/api-keys        - Get API keys (authenticated)")
     print("  POST /user/api-keys        - Create API key (authenticated)")
     print("  DELETE /user/api-keys/{id} - Delete API key (authenticated)")
+    print("  GET  /user/sessions        - Get user sessions (authenticated)")
+    print("  DELETE /user/sessions/{id} - Delete user session (authenticated)")
     print("  POST /auth/2fa/setup       - Setup 2FA (authenticated)")
     print("  POST /auth/2fa/verify      - Verify 2FA (authenticated)")
     print("  POST /auth/2fa/disable     - Disable 2FA (authenticated)")

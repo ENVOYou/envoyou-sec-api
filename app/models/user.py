@@ -34,6 +34,7 @@ class User(Base):
     
     # Relationships
     api_keys = relationship("APIKey", back_populates="user", cascade="all, delete-orphan")
+    sessions = relationship("Session", back_populates="user", cascade="all, delete-orphan")
     
     def set_password(self, password: str):
         """Hash and set the user's password"""
