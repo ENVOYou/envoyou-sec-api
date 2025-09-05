@@ -3,6 +3,7 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 import os
 from typing import Optional
+from datetime import datetime
 
 class EmailService:
     def __init__(self):
@@ -54,7 +55,122 @@ class EmailService:
         
         return self._send_email(to_email, subject, html_content)
     
-    def _send_email(self, to_email: str, subject: str, html_content: str) -> bool:
+    def send_welcome_email(self, to_email: str, user_name: str) -> bool:
+        """Send welcome email after successful registration"""
+        subject = "Welcome to Envoyou! 🎉"
+        
+        html_content = f"""
+        <html>
+        <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 40px 20px; text-align: center; border-radius: 10px 10px 0 0;">
+                <h1 style="color: white; margin: 0; font-size: 28px;">Welcome to Envoyou!</h1>
+                <p style="color: #e8e8e8; margin: 10px 0 0 0; font-size: 16px;">Your environmental data journey begins here</p>
+            </div>
+            <div style="background: white; padding: 40px 30px; border-radius: 0 0 10px 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                <h2 style="color: #333; margin-top: 0;">Hi {user_name}! 👋</h2>
+                <p style="color: #666; line-height: 1.6; font-size: 16px;">
+                    Thank you for joining Envoyou! We're excited to have you as part of our community 
+                    dedicated to environmental data verification and compliance.
+                </p>
+                <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                    <h3 style="color: #333; margin-top: 0;">What's Next?</h3>
+                    <ul style="color: #666; padding-left: 20px;">
+                        <li>Complete your email verification</li>
+                        <li>Explore our comprehensive environmental data APIs</li>
+                        <li>Generate your first API key for data access</li>
+                        <li>Set up two-factor authentication for enhanced security</li>
+                    </ul>
+                </div>
+                <div style="text-align: center; margin: 30px 0;">
+                    <a href="https://api.envoyou.com/docs" style="background-color: #4CAF50; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; font-weight: bold;">Explore API Documentation</a>
+                </div>
+                <p style="color: #999; font-size: 14px; text-align: center; margin-top: 30px; border-top: 1px solid #eee; padding-top: 20px;">
+                    Need help? Contact our support team at <a href="mailto:support@envoyou.com" style="color: #667eea;">support@envoyou.com</a>
+                </p>
+            </div>
+        </body>
+        </html>
+        """
+        
+        return self._send_email(to_email, subject, html_content)
+    
+    def send_login_notification(self, to_email: str, user_name: str, login_time: str, ip_address: str, user_agent: str) -> bool:
+        """Send login notification email for security"""
+        subject = "🔐 New Login to Your Envoyou Account"
+        
+        html_content = f"""
+        <html>
+        <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <div style="background: #fff3cd; border: 1px solid #ffeaa7; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+                <h2 style="color: #856404; margin: 0;">🔔 Login Notification</h2>
+            </div>
+            <div style="background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                <h3 style="color: #333;">Hi {user_name},</h3>
+                <p style="color: #666; line-height: 1.6;">
+                    We detected a new login to your Envoyou account. If this was you, no action is needed.
+                </p>
+                <div style="background: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0;">
+                    <strong>Login Details:</strong><br>
+                    📅 Time: {login_time}<br>
+                    🌐 IP Address: {ip_address}<br>
+                    💻 Device: {user_agent[:100]}{'...' if len(user_agent) > 100 else ''}
+                </div>
+                <div style="background: #f8d7da; border: 1px solid #f5c6cb; padding: 15px; border-radius: 5px; margin: 20px 0;">
+                    <strong style="color: #721c24;">⚠️ Wasn't you?</strong><br>
+                    <span style="color: #721c24;">If you didn't log in recently, please change your password immediately and contact our security team.</span>
+                </div>
+                <div style="text-align: center; margin: 30px 0;">
+                    <a href="https://api.envoyou.com/auth/change-password" style="background-color: #dc3545; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Change Password</a>
+                    <a href="https://api.envoyou.com/user/sessions" style="background-color: #6c757d; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; margin-left: 10px;">View Sessions</a>
+                </div>
+                <p style="color: #999; font-size: 12px; text-align: center;">
+                    This is an automated security notification. Please do not reply to this email.
+                </p>
+            </div>
+        </body>
+        </html>
+        """
+        
+        return self._send_email(to_email, subject, html_content)
+    
+    def send_api_key_created_notification(self, to_email: str, user_name: str, api_key_name: str, api_key_preview: str) -> bool:
+        """Send notification when API key is created"""
+        subject = "🔑 New API Key Created - Envoyou"
+        
+        html_content = f"""
+        <html>
+        <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <div style="background: #d4edda; border: 1px solid #c3e6cb; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+                <h2 style="color: #155724; margin: 0;">✅ API Key Created Successfully</h2>
+            </div>
+            <div style="background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                <h3 style="color: #333;">Hi {user_name},</h3>
+                <p style="color: #666; line-height: 1.6;">
+                    A new API key has been created for your Envoyou account. Keep this key secure and never share it publicly.
+                </p>
+                <div style="background: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #28a745;">
+                    <strong>API Key Details:</strong><br>
+                    📝 Name: {api_key_name}<br>
+                    🔑 Key: {api_key_preview}<br>
+                    📅 Created: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+                </div>
+                <div style="background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 5px; margin: 20px 0;">
+                    <strong style="color: #856404;">🔒 Security Reminder:</strong><br>
+                    <span style="color: #856404;">Store this API key securely. You can regenerate it anytime from your dashboard if compromised.</span>
+                </div>
+                <div style="text-align: center; margin: 30px 0;">
+                    <a href="https://api.envoyou.com/user/api-keys" style="background-color: #28a745; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Manage API Keys</a>
+                    <a href="https://api.envoyou.com/docs" style="background-color: #6c757d; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; margin-left: 10px;">API Documentation</a>
+                </div>
+                <p style="color: #999; font-size: 12px; text-align: center;">
+                    This is an automated notification. Please do not reply to this email.
+                </p>
+            </div>
+        </body>
+        </html>
+        """
+        
+        return self._send_email(to_email, subject, html_content)
         """Send email using SMTP"""
         try:
             # Create message
