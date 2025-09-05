@@ -552,9 +552,7 @@ async def request_free_api_key(
                 name=request.name or f"Free User - {request.email.split('@')[0]}",
                 company=request.company or "Free User",
                 password_hash="",  # No password for free users
-                is_active=True,
-                email_verified=True,  # Auto-verify for free users
-                role="free"
+                email_verified=True  # Auto-verify for free users
             )
             
             db.add(new_user)
