@@ -229,3 +229,9 @@ demo_cookies.json
 *.log
 
 ALTERNATIVE_DATA_SOURCE.md
+
+# Ignore temporary note files
+*.log
+*.txt
+error*
+debug.log
