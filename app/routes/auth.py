@@ -1,12 +1,14 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 from pydantic import BaseModel, EmailStr
 from typing import Optional
 import re
+from datetime import datetime
 
 from ..models.database import get_db
 from ..models.user import User
+from ..models.session import Session
 from ..utils.jwt import create_access_token, create_refresh_token, verify_token
 from ..utils.email import email_service
 from ..utils.email import email_service
@@ -99,7 +101,11 @@ async def register(user_data: UserRegister, db: Session = Depends(get_db)):
     )
 
 @router.post("/login", response_model=TokenResponse)
-async def login(user_data: UserLogin, db: Session = Depends(get_db)):
+async def login(
+    user_data: UserLogin,
+    db: Session = Depends(get_db),
+    request: Request = None
+):
     """Login user"""
     user = db.query(User).filter(User.email == user_data.email).first()
     if not user or not user.verify_password(user_data.password):
@@ -111,6 +117,34 @@ async def login(user_data: UserLogin, db: Session = Depends(get_db)):
     # Create tokens
     access_token = create_access_token(data={"sub": user.email})
     refresh_token = create_refresh_token(data={"sub": user.email})
+    
+    # Create session tracking
+    try:
+        # Get device info from request headers
+        user_agent = request.headers.get("User-Agent", "Unknown")
+        ip_address = request.client.host if request.client else "Unknown"
+        
+        # Parse device info
+        device_info = {
+            "device": user_agent,
+            "browser": "Unknown",
+            "os": "Unknown"
+        }
+        
+        # Create session
+        session = Session(
+            user_id=user.id,
+            token=access_token,
+            device_info=device_info,
+            ip_address=ip_address
+        )
+        
+        db.add(session)
+        db.commit()
+        
+    except Exception as e:
+        # Don't fail login if session creation fails
+        print(f"Session creation failed: {e}")
     
     return TokenResponse(
         access_token=access_token,
@@ -336,6 +370,20 @@ async def get_current_user(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="User not found"
         )
+    
+    # Update session activity if session exists
+    try:
+        session = db.query(Session).filter(
+            Session.user_id == user.id,
+            Session.expires_at > datetime.utcnow()
+        ).order_by(Session.last_active.desc()).first()
+        
+        if session:
+            session.update_activity()
+            db.commit()
+    except Exception as e:
+        # Don't fail if session update fails
+        print(f"Session update failed: {e}")
     
     return user
 

@@ -5,7 +5,8 @@ import uuid
 import secrets
 import hashlib
 
-Base = declarative_base()
+# Use the same Base as User model
+from .user import Base
 
 class APIKey(Base):
     __tablename__ = "api_keys"

@@ -32,7 +32,7 @@ def create_tables():
     """Create all database tables"""
     from .user import Base
     from .api_key import Base as APIKeyBase
+    from .session import Base as SessionBase
     
-    # Create tables for both bases
+    # Create all tables using the same metadata
     Base.metadata.create_all(bind=engine)
-    APIKeyBase.metadata.create_all(bind=engine)
