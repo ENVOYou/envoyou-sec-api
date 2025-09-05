@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.openapi.utils import get_openapi
 from fastapi.staticfiles import StaticFiles
+import os
 
 app = FastAPI(
     title="Environmental Data Verification API",
@@ -15,6 +16,10 @@ app = FastAPI(
     },
     terms_of_service="https://j8w3vpxvpb.ap-southeast-2.awsapprunner.com/terms"
 )
+
+# Ensure uploads directory exists
+os.makedirs("uploads", exist_ok=True)
+os.makedirs("uploads/avatars", exist_ok=True)
 
 # Mount static files for uploads
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
@@ -36,17 +41,6 @@ from app.routes.user import router as user_router
 
 # Import security utilities
 from app.utils.security import is_public_endpoint, validate_api_key, rate_limit_dependency_factory
-
-app = FastAPI(
-    title="Environmental Data Verification API",
-    description="Production API for environmental data verification and compliance checking with multi-source data integration",
-    version="1.0.0",
-    contact={
-            "name": "API Support",
-            "email": "support@envoyou.com"
-    },
-    terms_of_service="https://j8w3vpxvpb.ap-southeast-2.awsapprunner.com/terms"
-)
 
 # CORS
 cors_origins = settings.CORS_ORIGINS # Use settings for CORS origins
