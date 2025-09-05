@@ -90,3 +90,5 @@ passlib==1.7.4
 python-jose==3.5.0
 python-multipart==0.0.20
 email-validator==2.3.0
+pyotp==2.9.0
+qrcode==7.4.2

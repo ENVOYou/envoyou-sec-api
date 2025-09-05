@@ -9,6 +9,7 @@ from datetime import datetime
 
 from ..models.database import get_db
 from ..models.user import User
+from ..models.api_key import APIKey
 from ..utils.jwt import verify_token
 
 router = APIRouter()
@@ -30,8 +31,32 @@ class UserProfileResponse(BaseModel):
     avatar_url: Optional[str]
     timezone: str
     email_verified: bool
+    two_factor_enabled: bool
     created_at: Optional[str]
     last_login: Optional[str]
+
+class APIKeyCreate(BaseModel):
+    name: str
+    permissions: list = ["read"]
+
+class APIKeyResponse(BaseModel):
+    id: str
+    name: str
+    prefix: str
+    created_at: Optional[str]
+    last_used: Optional[str]
+    usage_count: int
+    permissions: list
+
+class APIKeyListResponse(BaseModel):
+    api_keys: list[APIKeyResponse]
+
+class APIKeyCreateResponse(BaseModel):
+    id: str
+    name: str
+    key: str  # Only shown once during creation
+    prefix: str
+    permissions: list
 
 # Dependency to get current user
 async def get_current_user(
@@ -135,3 +160,66 @@ async def upload_avatar(
         "message": "Avatar uploaded successfully",
         "avatar_url": avatar_url
     }
+
+@router.get("/api-keys", response_model=APIKeyListResponse)
+async def get_api_keys(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Get all API keys for current user"""
+    api_keys = db.query(APIKey).filter(
+        APIKey.user_id == current_user.id,
+        APIKey.is_active == True
+    ).all()
+    
+    return APIKeyListResponse(api_keys=[APIKeyResponse(**key.to_dict()) for key in api_keys])
+
+@router.post("/api-keys", response_model=APIKeyCreateResponse)
+async def create_api_key(
+    key_data: APIKeyCreate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Create a new API key"""
+    # Create new API key
+    api_key = APIKey(
+        user_id=current_user.id,
+        name=key_data.name,
+        permissions=key_data.permissions
+    )
+    
+    # Generate the actual key (this is the only time we see the full key)
+    actual_key = api_key._generate_key()
+    
+    db.add(api_key)
+    db.commit()
+    db.refresh(api_key)
+    
+    return APIKeyCreateResponse(
+        id=api_key.id,
+        name=api_key.name,
+        key=actual_key,  # Only shown once
+        prefix=api_key.prefix,
+        permissions=key_data.permissions
+    )
+
+@router.delete("/api-keys/{key_id}")
+async def delete_api_key(
+    key_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Delete an API key"""
+    api_key = db.query(APIKey).filter(
+        APIKey.id == key_id,
+        APIKey.user_id == current_user.id
+    ).first()
+    
+    if not api_key:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="API key not found"
+        )
+    
+    # Soft delete by marking as inactive
+    api_key.is_active = False
+    db.commit()
+    
+    return {"message": "API key deleted successfully"}
