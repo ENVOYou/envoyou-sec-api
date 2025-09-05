@@ -90,6 +90,13 @@ async def register(user_data: UserRegister, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(user)
     
+    # Send welcome email
+    try:
+        email_service.send_welcome_email(user.email, user.name)
+    except Exception as e:
+        # Don't fail registration if email fails
+        print(f"Welcome email failed: {e}")
+    
     # Create tokens
     access_token = create_access_token(data={"sub": user.email})
     refresh_token = create_refresh_token(data={"sub": user.email})
@@ -141,6 +148,17 @@ async def login(
         
         db.add(session)
         db.commit()
+        
+        # Send login notification email
+        try:
+            from datetime import datetime
+            login_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            email_service.send_login_notification(
+                user.email, user.name, login_time, ip_address, user_agent
+            )
+        except Exception as e:
+            # Don't fail login if email fails
+            print(f"Login notification email failed: {e}")
         
     except Exception as e:
         # Don't fail login if session creation fails

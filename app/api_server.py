@@ -41,6 +41,7 @@ from app.routes.user import router as user_router
 
 # Import security utilities
 from app.utils.security import is_public_endpoint, validate_api_key, rate_limit_dependency_factory
+from app.utils.security_middleware import SecurityMiddleware
 
 # CORS
 cors_origins = settings.CORS_ORIGINS # Use settings for CORS origins
@@ -58,6 +59,9 @@ app.add_middleware(
 
 # GZIP for response compression
 app.add_middleware(GZipMiddleware, minimum_size=1000) # Keep this as is
+
+# Security middleware for XSS, CSRF, and input sanitization
+app.add_middleware(SecurityMiddleware)
 
 # Logging
 log_level = getattr(logging, settings.LOG_LEVEL.upper(), logging.INFO) # Use settings.LOG_LEVEL

@@ -204,6 +204,17 @@ async def create_api_key(
     db.commit()
     db.refresh(api_key)
     
+    # Send API key creation notification
+    try:
+        from app.utils.email import email_service
+        api_key_preview = f"{actual_key[:8]}...{actual_key[-4:]}"
+        email_service.send_api_key_created_notification(
+            current_user.email, current_user.name, key_data.name, api_key_preview
+        )
+    except Exception as e:
+        # Don't fail API key creation if email fails
+        print(f"API key creation email failed: {e}")
+    
     return APIKeyCreateResponse(
         id=api_key.id,
         name=api_key.name,
