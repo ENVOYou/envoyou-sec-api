@@ -2,6 +2,7 @@ from sqlalchemy import Column, Integer, String, Boolean, DateTime, func
 from sqlalchemy.ext.declarative import declarative_base
 from passlib.context import CryptContext
 import uuid
+from datetime import datetime, timedelta
 
 Base = declarative_base()
 
@@ -17,7 +18,14 @@ class User(Base):
     name = Column(String, nullable=False)
     company = Column(String)
     job_title = Column(String)
+    avatar_url = Column(String)
+    timezone = Column(String, default="Asia/Jakarta")
     email_verified = Column(Boolean, default=False)
+    email_verification_token = Column(String)
+    email_verification_expires = Column(DateTime(timezone=True))
+    password_reset_token = Column(String)
+    password_reset_expires = Column(DateTime(timezone=True))
+    last_login = Column(DateTime(timezone=True))
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
     
@@ -29,6 +37,41 @@ class User(Base):
         """Verify a password against the stored hash"""
         return pwd_context.verify(password, self.password_hash)
     
+    def generate_verification_token(self):
+        """Generate email verification token"""
+        self.email_verification_token = str(uuid.uuid4())
+        self.email_verification_expires = datetime.utcnow() + timedelta(hours=24)
+    
+    def generate_reset_token(self):
+        """Generate password reset token"""
+        self.password_reset_token = str(uuid.uuid4())
+        self.password_reset_expires = datetime.utcnow() + timedelta(hours=1)
+    
+    def verify_verification_token(self, token: str) -> bool:
+        """Verify email verification token"""
+        if (self.email_verification_token == token and 
+            self.email_verification_expires and 
+            datetime.utcnow() < self.email_verification_expires):
+            self.email_verified = True
+            self.email_verification_token = None
+            self.email_verification_expires = None
+            return True
+        return False
+    
+    def verify_reset_token(self, token: str) -> bool:
+        """Verify password reset token"""
+        if (self.password_reset_token == token and 
+            self.password_reset_expires and 
+            datetime.utcnow() < self.password_reset_expires):
+            self.password_reset_token = None
+            self.password_reset_expires = None
+            return True
+        return False
+    
+    def update_last_login(self):
+        """Update last login timestamp"""
+        self.last_login = datetime.utcnow()
+    
     def to_dict(self):
         """Convert user object to dictionary (without password)"""
         return {
@@ -37,6 +80,9 @@ class User(Base):
             "name": self.name,
             "company": self.company,
             "job_title": self.job_title,
+            "avatar_url": self.avatar_url,
+            "timezone": self.timezone,
             "email_verified": self.email_verified,
-            "created_at": self.created_at.isoformat() if self.created_at else None
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "last_login": self.last_login.isoformat() if self.last_login else None
         }
