@@ -171,6 +171,8 @@ class EmailService:
         """
         
         return self._send_email(to_email, subject, html_content)
+    
+    def _send_email(self, to_email: str, subject: str, html_content: str) -> bool:
         """Send email using SMTP"""
         try:
             # Create message
@@ -198,6 +200,79 @@ class EmailService:
             
         except Exception as e:
             print(f"Email sending failed: {e}")
+            return False
+    
+    def send_free_api_key_notification(self, to_email: str, user_name: str, api_key: str, key_prefix: str) -> bool:
+        """Send free API key notification email"""
+        try:
+            subject = "Your Free API Key - Environmental Data API"
+            
+            html_content = f"""
+            <html>
+            <body>
+                <h2>Welcome to Environmental Data Verification API!</h2>
+                <p>Hi {user_name},</p>
+                <p>Thank you for requesting a free API key! Here are your access details:</p>
+                
+                <div style="background-color: #f5f5f5; padding: 15px; border-radius: 5px; margin: 20px 0;">
+                    <h3>Your API Key:</h3>
+                    <p style="font-family: monospace; font-size: 14px; background-color: #e8e8e8; padding: 10px; border-radius: 3px;">
+                        {api_key}
+                    </p>
+                    <p><strong>Key Prefix:</strong> {key_prefix}</p>
+                </div>
+                
+                <p><strong>Important:</strong> Save this key securely. You won't be able to see it again.</p>
+                
+                <h3>How to use your API key:</h3>
+                <ul>
+                    <li>Include the key in your request headers: <code>Authorization: Bearer {api_key}</code></li>
+                    <li>Or use query parameter: <code>?api_key={api_key}</code></li>
+                </ul>
+                
+                <h3>Available endpoints:</h3>
+                <ul>
+                    <li><code>GET /permits</code> - Get all environmental permits</li>
+                    <li><code>GET /global/emissions</code> - EPA emissions data</li>
+                    <li><code>GET /global/eea</code> - EEA environmental indicators</li>
+                    <li><code>GET /global/iso</code> - ISO 14001 certifications</li>
+                </ul>
+                
+                <p>For complete documentation, visit: <a href="http://localhost:10000/docs">API Documentation</a></p>
+                
+                <p>If you have any questions, feel free to contact our support team.</p>
+                
+                <p>Best regards,<br>
+                Environmental Data API Team</p>
+            </body>
+            </html>
+            """
+            
+            # Create message
+            msg = MIMEMultipart('alternative')
+            msg['From'] = self.sender_email
+            msg['To'] = to_email
+            msg['Subject'] = subject
+            
+            # Add HTML content
+            html_part = MIMEText(html_content, 'html')
+            msg.attach(html_part)
+            
+            # Send email
+            server = smtplib.SMTP(self.smtp_server, self.smtp_port)
+            if self.use_tls:
+                server.starttls()
+            
+            if self.sender_password:
+                server.login(self.sender_email, self.sender_password)
+            
+            server.sendmail(self.sender_email, to_email, msg.as_string())
+            server.quit()
+            
+            return True
+            
+        except Exception as e:
+            print(f"Free API key email sending failed: {e}")
             return False
 
 # Global email service instance
