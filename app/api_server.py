@@ -14,6 +14,7 @@ from app.routes import health_router
 from app.routes.permits import router as permits_router
 from app.routes.global_data import router as global_router
 from app.routes.admin import router as admin_router
+from app.routes.auth import router as auth_router
 
 # Import security utilities
 from app.utils.security import is_public_endpoint, validate_api_key, rate_limit_dependency_factory
@@ -24,7 +25,7 @@ app = FastAPI(
     version="1.0.0",
     contact={
             "name": "API Support",
-            "email": "support@environmentalapi.com"
+            "email": "support@envoyou.com"
     },
     terms_of_service="https://j8w3vpxvpb.ap-southeast-2.awsapprunner.com/terms"
 )
@@ -67,7 +68,8 @@ logger = logging.getLogger(__name__)
 
 async def api_key_dependency(request: Request):
     public_paths = [
-        "/health", "/", "/docs", "/openapi.json", "/redoc"
+        "/health", "/", "/docs", "/openapi.json", "/redoc",
+        "/auth/register", "/auth/login", "/auth/refresh", "/auth/logout"
         ]
     path = request.url.path
     if not any(path == pub_path or path.startswith(pub_path + "/") for pub_path in public_paths):
@@ -116,6 +118,7 @@ def custom_openapi():
         routes=app.routes,
         tags=[
             {"name": "Health", "description": "Service health and status endpoints"},
+            {"name": "Authentication", "description": "User authentication endpoints"},
             {"name": "Global Data", "description": "Global environmental data endpoints"},
             {"name": "Admin", "description": "Administrative and statistics endpoints"}
         ]
@@ -139,6 +142,7 @@ app.include_router(permits_router, prefix="/permits")
 rate_limiter = rate_limit_dependency_factory()
 app.include_router(global_router, prefix="/global", dependencies=[Depends(api_key_dependency), Depends(rate_limiter)])
 app.include_router(admin_router, prefix="/admin")
+app.include_router(auth_router, prefix="/auth")
 
 @app.get("/", tags=["Health"])
 async def home():
@@ -203,6 +207,10 @@ async def internal_error(request: Request, exc):
 
 @app.on_event("startup")
 async def print_startup_info():
+    # Create database tables
+    from app.models.database import create_tables
+    create_tables()
+    
     port = settings.PORT # Use settings for port
     print("="*60)
     print("🚀 Environmental Data Verification API Server")
@@ -211,6 +219,10 @@ async def print_startup_info():
     print("Available endpoints:")
     print("  GET  /                     - API documentation")
     print("  GET  /health               - Health check")
+    print("  POST /auth/register        - User registration")
+    print("  POST /auth/login           - User login")
+    print("  POST /auth/refresh         - Refresh access token")
+    print("  POST /auth/logout          - User logout")
     print("  GET  /permits              - Get all permits")
     print("  GET  /permits/search       - Search permits")
     print("  GET  /permits/active       - Get active permits")

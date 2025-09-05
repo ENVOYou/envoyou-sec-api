@@ -86,3 +86,6 @@ websockets==15.0.1
 Werkzeug==3.0.1
 wheel==0.45.1
 wrapt==1.17.3
+passlib==1.7.4
+python-jose==3.5.0
+python-multipart==0.0.20
