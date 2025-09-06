@@ -54,6 +54,11 @@ class Settings(BaseSettings):
     API_KEYS: Optional[str] = None
     MASTER_API_KEY: Optional[str] = None
 
+    # Sentry Configuration
+    SENTRY_DSN: Optional[str] = None
+    SENTRY_TRACES_SAMPLE_RATE: float = 1.0
+    SENTRY_SEND_DEFAULT_PII: bool = True
+
 
 # Buat satu instance settings yang dapat digunakan kembali di seluruh aplikasi
 settings = Settings()
