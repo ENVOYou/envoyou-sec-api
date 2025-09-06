@@ -75,4 +75,26 @@ async def test_sentry():
     except Exception as e:
         # Log the error (Sentry will automatically capture this)
         print(f"Test error occurred: {e}")
-        raise e  # Re-raise to let Sentry capture it
+        raise e
+
+@router.post("/test-email", tags=["Health"], summary="Test Email Service")
+async def test_email(email: str):
+    """
+    Test endpoint to verify email service is working.
+    Send a test email to the specified address.
+    """
+    from app.utils.email import email_service
+    
+    try:
+        result = email_service.send_verification_email(
+            to_email=email,
+            verification_token="test-verification-token-123"
+        )
+        
+        if result:
+            return {"status": "success", "message": f"Test email sent to {email}"}
+        else:
+            return {"status": "failed", "message": "Email sending failed"}
+            
+    except Exception as e:
+        return {"status": "error", "message": str(e)}  # Re-raise to let Sentry capture it
