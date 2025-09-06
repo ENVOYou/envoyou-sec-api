@@ -105,10 +105,14 @@ async def register(user_data: UserRegister, db: Session = Depends(get_db)):
     
     # Send welcome email
     try:
-        email_service.send_welcome_email(user.email, user.name)
+        email_result = email_service.send_welcome_email(user.email, user.name)
+        if email_result:
+            print(f"Welcome email sent successfully to {user.email}")
+        else:
+            print(f"Failed to send welcome email to {user.email}")
     except Exception as e:
         # Don't fail registration if email fails
-        print(f"Welcome email failed: {e}")
+        print(f"Welcome email error: {e}")
     
     # Create tokens
     access_token = create_access_token(data={"sub": user.email})
