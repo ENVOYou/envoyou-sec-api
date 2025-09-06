@@ -9,9 +9,18 @@ class EmailService:
     def __init__(self):
         self.smtp_server = os.getenv("SMTP_SERVER", "smtp.gmail.com")
         self.smtp_port = int(os.getenv("SMTP_PORT", "587"))
-        self.sender_email = os.getenv("SENDER_EMAIL", "noreply@envoyou.com")
-        self.sender_password = os.getenv("SENDER_PASSWORD", "")
+        self.sender_email = os.getenv("SMTP_USERNAME", "noreply@envoyou.com")
+        self.sender_password = os.getenv("SMTP_PASSWORD", "")
         self.use_tls = os.getenv("SMTP_USE_TLS", "true").lower() == "true"
+        
+        # Check if we're in offline mode (for Railway deployment)
+        self.offline_mode = os.getenv("EMAIL_OFFLINE_MODE", "false").lower() == "true"
+        
+        # Alternative SMTP configurations for cloud deployments
+        self.alternative_configs = []
+        
+        if self.offline_mode:
+            print("Email service running in offline mode - emails will be logged only")
     
     def send_verification_email(self, to_email: str, verification_token: str) -> bool:
         """Send email verification with OTP/token"""
@@ -173,11 +182,58 @@ class EmailService:
         return self._send_email(to_email, subject, html_content)
     
     def _send_email(self, to_email: str, subject: str, html_content: str) -> bool:
-        """Send email using SMTP"""
+        """Send email using SMTP with fallback configurations"""
+        
+        # If offline mode, just log the email
+        if self.offline_mode:
+            self._log_email(to_email, subject, html_content)
+            return True
+        
+        # Try primary configuration first
+        if self._try_send_email(to_email, subject, html_content, 
+                               self.smtp_server, self.smtp_port, 
+                               self.sender_email, self.sender_password):
+            return True
+        
+        # Try alternative configurations
+        for config in self.alternative_configs:
+            if config.get("username") and config.get("password"):
+                if self._try_send_email(to_email, subject, html_content,
+                                       config["server"], config["port"],
+                                       config["username"], config["password"]):
+                    print(f"Email sent using alternative config: {config['server']}")
+                    return True
+        
+        print("All email sending attempts failed")
+        return False
+    
+    def _log_email(self, to_email: str, subject: str, content: str):
+        """Log email content when in offline mode"""
+        import datetime
+        timestamp = datetime.datetime.now().isoformat()
+        log_entry = f"""
+[{timestamp}] EMAIL LOG (OFFLINE MODE)
+To: {to_email}
+Subject: {subject}
+Content: {content[:500]}...
+{'(truncated)' if len(content) > 500 else ''}
+"""
+        print(log_entry)
+        
+        # Optionally save to file
+        try:
+            with open("email_log.txt", "a") as f:
+                f.write(log_entry + "\n")
+        except:
+            pass
+    
+    def _try_send_email(self, to_email: str, subject: str, html_content: str, 
+                       server: str, port: int, username: str, password: str) -> bool:
+        """Try to send email with specific SMTP configuration"""
         try:
             # Create message
             msg = MIMEMultipart('alternative')
-            msg['From'] = self.sender_email
+            msg['From'] = username
             msg['To'] = to_email
             msg['Subject'] = subject
             
@@ -185,19 +241,28 @@ class EmailService:
             html_part = MIMEText(html_content, 'html')
             msg.attach(html_part)
             
-            # Send email
-            server = smtplib.SMTP(self.smtp_server, self.smtp_port)
+            # Send email with timeout
+            smtp_server = smtplib.SMTP(server, port, timeout=30)
             if self.use_tls:
-                server.starttls()
+                smtp_server.starttls()
             
-            if self.sender_password:
-                server.login(self.sender_email, self.sender_password)
+            if password:
+                smtp_server.login(username, password)
             
-            server.sendmail(self.sender_email, to_email, msg.as_string())
-            server.quit()
+            smtp_server.sendmail(username, to_email, msg.as_string())
+            smtp_server.quit()
             
             return True
             
+        except smtplib.SMTPConnectError as e:
+            print(f"SMTP connection failed to {server}:{port}: {e}")
+            return False
+        except smtplib.SMTPAuthenticationError as e:
+            print(f"SMTP authentication failed for {username}: {e}")
+            return False
+        except smtplib.SMTPException as e:
+            print(f"SMTP error: {e}")
+            return False
         except Exception as e:
             print(f"Email sending failed: {e}")
             return False
