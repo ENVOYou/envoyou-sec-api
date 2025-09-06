@@ -61,3 +61,18 @@ async def liveness_check():
     Simple endpoint that returns 200 when service is alive.
     """
     return JSONResponse({"status": "alive"})
+
+@router.get("/test-sentry", tags=["Health"], summary="Test Sentry Error Monitoring")
+async def test_sentry():
+    """
+    Test endpoint to verify Sentry error monitoring is working.
+    This will intentionally throw an error to test Sentry integration.
+    """
+    try:
+        # Intentionally cause an error for testing
+        result = 1 / 0  # This will raise ZeroDivisionError
+        return {"message": f"Result: {result}"}
+    except Exception as e:
+        # Log the error (Sentry will automatically capture this)
+        print(f"Test error occurred: {e}")
+        raise e  # Re-raise to let Sentry capture it

@@ -3,6 +3,32 @@ from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 
+# Initialize Sentry for error monitoring
+import sentry_sdk
+from sentry_sdk.integrations.fastapi import FastApiIntegration
+from sentry_sdk.integrations.httpx import HttpxIntegration
+from app.config import settings
+
+if settings.SENTRY_DSN:
+    sentry_sdk.init(
+        dsn=settings.SENTRY_DSN,
+        # Add data like request headers and IP for users,
+        # see https://docs.sentry.io/platforms/python/data-management/data-collected/ for more info
+        send_default_pii=settings.SENTRY_SEND_DEFAULT_PII,
+        integrations=[
+            FastApiIntegration(),
+            HttpxIntegration(),
+        ],
+        # Performance monitoring
+        traces_sample_rate=settings.SENTRY_TRACES_SAMPLE_RATE,
+        # Release health tracking
+        enable_tracing=True,
+        environment=settings.ENVIRONMENT,
+    )
+    print("✅ Sentry error monitoring initialized")
+else:
+    print("⚠️  Sentry DSN not configured, error monitoring disabled")
+
 app = FastAPI(
     title="Environmental Data Verification API",
     description="Production API for environmental data verification and compliance checking with multi-source data integration",
