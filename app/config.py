@@ -59,6 +59,13 @@ class Settings(BaseSettings):
     SENTRY_TRACES_SAMPLE_RATE: float = 1.0
     SENTRY_SEND_DEFAULT_PII: bool = True
 
+    # Email Configuration
+    EMAIL_SERVICE: str = "smtp"  # smtp, mailgun, sendgrid
+    MAILGUN_API_KEY: Optional[str] = None
+    MAILGUN_DOMAIN: Optional[str] = None
+    MAILGUN_API_BASE_URL: str = "https://api.mailgun.net"
+    SENDGRID_API_KEY: Optional[str] = None
+
 
 # Buat satu instance settings yang dapat digunakan kembali di seluruh aplikasi
 settings = Settings()

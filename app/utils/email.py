@@ -4,14 +4,25 @@ from email.mime.multipart import MIMEMultipart
 import os
 from typing import Optional
 from datetime import datetime
+import requests
+from app.config import settings
 
 class EmailService:
     def __init__(self):
+        # Email service configuration
+        self.email_service = os.getenv("EMAIL_SERVICE") or settings.EMAIL_SERVICE or "smtp"
+        
+        # SMTP configuration (fallback)
         self.smtp_server = os.getenv("SMTP_SERVER", "smtp.gmail.com")
         self.smtp_port = int(os.getenv("SMTP_PORT", "587"))
         self.sender_email = os.getenv("SMTP_USERNAME", "noreply@envoyou.com")
         self.sender_password = os.getenv("SMTP_PASSWORD", "")
         self.use_tls = os.getenv("SMTP_USE_TLS", "true").lower() == "true"
+        
+        # Mailgun configuration
+        self.mailgun_api_key = os.getenv("MAILGUN_API_KEY") or settings.MAILGUN_API_KEY
+        self.mailgun_domain = os.getenv("MAILGUN_DOMAIN") or settings.MAILGUN_DOMAIN
+        self.mailgun_api_base_url = os.getenv("MAILGUN_API_BASE_URL", "https://api.mailgun.net")
         
         # Check if we're in offline mode (for Railway deployment)
         self.offline_mode = os.getenv("EMAIL_OFFLINE_MODE", "false").lower() == "true"
@@ -21,6 +32,10 @@ class EmailService:
         
         if self.offline_mode:
             print("Email service running in offline mode - emails will be logged only")
+        elif self.email_service == "mailgun" and self.mailgun_api_key:
+            print("Email service configured to use Mailgun")
+        else:
+            print(f"Email service configured to use {self.email_service}")
     
     def send_verification_email(self, to_email: str, verification_token: str) -> bool:
         """Send email verification with OTP/token"""
@@ -182,14 +197,20 @@ class EmailService:
         return self._send_email(to_email, subject, html_content)
     
     def _send_email(self, to_email: str, subject: str, html_content: str) -> bool:
-        """Send email using SMTP with fallback configurations"""
+        """Send email using configured service (Mailgun, SMTP) with fallback configurations"""
         
         # If offline mode, just log the email
         if self.offline_mode:
             self._log_email(to_email, subject, html_content)
             return True
         
-        # Try primary configuration first
+        # Try Mailgun first if configured
+        if self.email_service == "mailgun" and self.mailgun_api_key and self.mailgun_domain:
+            if self._send_mailgun_email(to_email, subject, html_content):
+                return True
+            print("Mailgun sending failed, falling back to SMTP")
+        
+        # Try primary SMTP configuration
         if self._try_send_email(to_email, subject, html_content, 
                                self.smtp_server, self.smtp_port, 
                                self.sender_email, self.sender_password):
@@ -206,6 +227,39 @@ class EmailService:
         
         print("All email sending attempts failed")
         return False
+    
+    def _send_mailgun_email(self, to_email: str, subject: str, html_content: str) -> bool:
+        """Send email using Mailgun API"""
+        try:
+            url = f"{self.mailgun_api_base_url}/v3/{self.mailgun_domain}/messages"
+            
+            data = {
+                "from": f"Envoyou <noreply@{self.mailgun_domain}>",
+                "to": to_email,
+                "subject": subject,
+                "html": html_content
+            }
+            
+            response = requests.post(
+                url,
+                auth=("api", self.mailgun_api_key),
+                data=data,
+                timeout=30
+            )
+            
+            if response.status_code == 200:
+                print(f"Email sent successfully via Mailgun to {to_email}")
+                return True
+            else:
+                print(f"Mailgun API error: {response.status_code} - {response.text}")
+                return False
+                
+        except requests.exceptions.RequestException as e:
+            print(f"Mailgun request failed: {e}")
+            return False
+        except Exception as e:
+            print(f"Mailgun sending failed: {e}")
+            return False
     
     def _log_email(self, to_email: str, subject: str, content: str):
         """Log email content when in offline mode"""
