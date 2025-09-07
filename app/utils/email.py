@@ -41,7 +41,7 @@ class EmailService:
     def send_verification_email(self, to_email: str, verification_token: str) -> bool:
         """Send email verification with OTP/token"""
         subject = "Verify Your Email - Envoyou"
-        verification_url = f"https://api.envoyou.com/auth/verify-email?token={verification_token}"
+        verification_url = f"https://envoyou.com/verify/{verification_token}"
         
         html_content = f"""
         <html>
