@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.responses import HTMLResponse
 from sqlalchemy.orm import Session
 from pydantic import BaseModel, EmailStr
 from typing import Optional
@@ -72,7 +73,12 @@ def validate_password(password: str) -> bool:
         return False
     return True
 
-@router.post("/register", response_model=MessageResponse)
+class RegistrationResponse(BaseModel):
+    success: bool
+    message: str
+    email_sent: bool = False
+
+@router.post("/register", response_model=RegistrationResponse)
 async def register(user_data: UserRegister, db: Session = Depends(get_db)):
     """Register a new user"""
     # Check if user already exists
@@ -107,17 +113,23 @@ async def register(user_data: UserRegister, db: Session = Depends(get_db)):
     db.refresh(user)
     
     # Send verification email instead of welcome email
+    email_sent = False
     try:
         email_result = email_service.send_verification_email(user.email, user.email_verification_token)
         if email_result:
             print(f"Verification email sent successfully to {user.email}")
+            email_sent = True
         else:
             print(f"Failed to send verification email to {user.email}")
     except Exception as e:
         # Don't fail registration if email fails
         print(f"Verification email error: {e}")
     
-    return MessageResponse(message="Registration successful. Please check your email to verify your account.")
+    return RegistrationResponse(
+        success=True,
+        message="Registration successful. Please check your email to verify your account.",
+        email_sent=email_sent
+    )
 
 @router.post("/login", response_model=TokenResponse)
 async def login(
@@ -281,6 +293,97 @@ async def verify_email(token_data: dict, db: Session = Depends(get_db)):
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid or expired token"
         )
+
+@router.get("/verify-email", response_class=HTMLResponse)
+async def verify_email_get(token: str, db: Session = Depends(get_db)):
+    """Verify email with token via GET request (for email links)"""
+    if not token:
+        return """
+        <html>
+        <head>
+            <title>Email Verification - Envoyou</title>
+            <style>
+                body { font-family: Arial, sans-serif; text-align: center; padding: 50px; }
+                .error { color: #dc3545; }
+                .container { max-width: 600px; margin: 0 auto; }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <h1 class="error">Verification Failed</h1>
+                <p>No verification token provided.</p>
+                <p>Please check your email for the correct verification link.</p>
+            </div>
+        </body>
+        </html>
+        """
+    
+    user = db.query(User).filter(User.email_verification_token == token).first()
+    if not user:
+        return """
+        <html>
+        <head>
+            <title>Email Verification - Envoyou</title>
+            <style>
+                body { font-family: Arial, sans-serif; text-align: center; padding: 50px; }
+                .error { color: #dc3545; }
+                .container { max-width: 600px; margin: 0 auto; }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <h1 class="error">Verification Failed</h1>
+                <p>This verification link is invalid or has expired.</p>
+                <p>Please request a new verification email or contact support.</p>
+            </div>
+        </body>
+        </html>
+        """
+    
+    if user.verify_verification_token(token):
+        db.commit()
+        return f"""
+        <html>
+        <head>
+            <title>Email Verification - Envoyou</title>
+            <style>
+                body {{ font-family: Arial, sans-serif; text-align: center; padding: 50px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }}
+                .success {{ color: #28a745; }}
+                .container {{ max-width: 600px; margin: 0 auto; background: white; padding: 40px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); color: #333; }}
+                .btn {{ background-color: #4CAF50; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block; margin-top: 20px; }}
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <h1 class="success">✅ Email Verified Successfully!</h1>
+                <p>Welcome to Envoyou, <strong>{user.name}</strong>!</p>
+                <p>Your email address <strong>{user.email}</strong> has been verified.</p>
+                <p>You can now log in to your account and start using our services.</p>
+                <a href="/" class="btn">Go to Login</a>
+            </div>
+        </body>
+        </html>
+        """
+    else:
+        return """
+        <html>
+        <head>
+            <title>Email Verification - Envoyou</title>
+            <style>
+                body { font-family: Arial, sans-serif; text-align: center; padding: 50px; }
+                .error { color: #dc3545; }
+                .container { max-width: 600px; margin: 0 auto; }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <h1 class="error">Verification Failed</h1>
+                <p>This verification link is invalid or has expired.</p>
+                <p>Please request a new verification email or contact support.</p>
+            </div>
+        </body>
+        </html>
+        """
 
 # Password Management Endpoints
 @router.post("/forgot-password", response_model=MessageResponse)
