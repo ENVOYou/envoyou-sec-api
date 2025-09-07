@@ -16,7 +16,7 @@ class EmailService:
         self.smtp_server = os.getenv("SMTP_SERVER", "smtp.gmail.com")
         self.smtp_port = int(os.getenv("SMTP_PORT", "587"))
         self.sender_email = os.getenv("FROM_EMAIL") or os.getenv("SMTP_USERNAME", "noreply@envoyou.com")
-        self.smtp_password = os.getenv("SMTP_PASSWORD", "")
+        self.sender_password = os.getenv("SMTP_PASSWORD", "")
         self.use_tls = os.getenv("SMTP_USE_TLS", "true").lower() == "true"
         
         # Mailgun configuration
