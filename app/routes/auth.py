@@ -72,7 +72,7 @@ def validate_password(password: str) -> bool:
         return False
     return True
 
-@router.post("/register", response_model=TokenResponse)
+@router.post("/register", response_model=MessageResponse)
 async def register(user_data: UserRegister, db: Session = Depends(get_db)):
     """Register a new user"""
     # Check if user already exists
@@ -99,30 +99,25 @@ async def register(user_data: UserRegister, db: Session = Depends(get_db)):
     )
     user.set_password(user_data.password)
     
+    # Generate verification token
+    user.generate_verification_token()
+    
     db.add(user)
     db.commit()
     db.refresh(user)
     
-    # Send welcome email
+    # Send verification email instead of welcome email
     try:
-        email_result = email_service.send_welcome_email(user.email, user.name)
+        email_result = email_service.send_verification_email(user.email, user.email_verification_token)
         if email_result:
-            print(f"Welcome email sent successfully to {user.email}")
+            print(f"Verification email sent successfully to {user.email}")
         else:
-            print(f"Failed to send welcome email to {user.email}")
+            print(f"Failed to send verification email to {user.email}")
     except Exception as e:
         # Don't fail registration if email fails
-        print(f"Welcome email error: {e}")
+        print(f"Verification email error: {e}")
     
-    # Create tokens
-    access_token = create_access_token(data={"sub": user.email})
-    refresh_token = create_refresh_token(data={"sub": user.email})
-    
-    return TokenResponse(
-        access_token=access_token,
-        refresh_token=refresh_token,
-        user=user.to_dict()
-    )
+    return MessageResponse(message="Registration successful. Please check your email to verify your account.")
 
 @router.post("/login", response_model=TokenResponse)
 async def login(
@@ -136,6 +131,13 @@ async def login(
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid email or password"
+        )
+    
+    # Check if email is verified
+    if not user.email_verified:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Please verify your email address before logging in"
         )
     
     # Create tokens
@@ -221,9 +223,12 @@ async def logout(credentials: HTTPAuthorizationCredentials = Depends(security)):
     # Server doesn't need to do anything special
     return MessageResponse(message="Logged out successfully")
 
+class EmailRequest(BaseModel):
+    email: EmailStr
+
 # Email Verification Endpoints
 @router.post("/send-verification", response_model=MessageResponse)
-async def send_verification_email(email_data: UserLogin, db: Session = Depends(get_db)):
+async def send_verification_email(email_data: EmailRequest, db: Session = Depends(get_db)):
     """Send email verification"""
     user = db.query(User).filter(User.email == email_data.email).first()
     if not user:
