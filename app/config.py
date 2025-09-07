@@ -65,6 +65,7 @@ class Settings(BaseSettings):
     MAILGUN_DOMAIN: Optional[str] = None
     MAILGUN_API_BASE_URL: str = "https://api.mailgun.net"
     SENDGRID_API_KEY: Optional[str] = None
+    EMAIL_OFFLINE_MODE: bool = False
 
 
 # Buat satu instance settings yang dapat digunakan kembali di seluruh aplikasi
