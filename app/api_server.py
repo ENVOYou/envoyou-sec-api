@@ -16,7 +16,7 @@ app = FastAPI(
     version="1.0.0",
     contact={
             "name": "API Support",
-            "email": "support@environmentalapi.com"
+            "email": "support@envoyou.com"
     },
     terms_of_service="https://j8w3vpxvpb.ap-southeast-2.awsapprunner.com/terms"
 )
@@ -243,7 +243,7 @@ async def print_startup_info():
     
     port = settings.PORT # Use settings for port
     print("="*60)
-    print("🚀 Environmental Data Verification API Server")
+    print("Environmental Data Verification API Server")
     print("="*60)
     print(f"Server would start on http://localhost:{port}")
     print("Available endpoints:")
