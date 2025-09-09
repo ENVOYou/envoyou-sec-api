@@ -86,6 +86,12 @@ class EEAClient:
         Data ini didasarkan pada nilai rata-rata global dan dapat diperbarui secara manual.
         """
         logger.info(f"Menggunakan data fallback untuk dataset: {dataset_id}")
+        
+        # Set environment variable to indicate fallback is being used
+        if dataset_id == "share-of-energy-from-renewable-sources":
+            os.environ["EEA_RENEWABLES_SOURCE"] = "EEA Fallback Data (API Unavailable)"
+        elif dataset_id == "industrial-releases-of-pollutants-to-water":
+            os.environ["EEA_POLLUTION_SOURCE"] = "EEA Fallback Data (API Unavailable)"
 
         if dataset_id == "share-of-energy-from-renewable-sources":
             # Data energi terbarukan global (2023 estimates)
