@@ -91,7 +91,9 @@ async def api_key_dependency(request: Request):
         "/health", "/", "/docs", "/openapi.json", "/redoc",
         "/auth/register", "/auth/login", "/auth/refresh", "/auth/logout",
         "/auth/send-verification", "/auth/verify-email", "/auth/forgot-password", "/auth/reset-password",
-        "/auth/2fa/setup", "/auth/2fa/verify", "/auth/2fa/disable"
+        "/auth/2fa/setup", "/auth/2fa/verify", "/auth/2fa/disable",
+        "/auth/google/login", "/auth/google/callback",
+        "/auth/github/login", "/auth/github/callback"
         ]
     path = request.url.path
     if not any(path == pub_path or path.startswith(pub_path + "/") for pub_path in public_paths):
