@@ -808,7 +808,14 @@ async def google_callback(
             user_info = user_response.json()
 
         # Check if user exists
-        user = db.query(User).filter(User.email == user_info["email"]).first()
+        try:
+            user = db.query(User).filter(User.email == user_info["email"]).first()
+        except Exception as e:
+            db.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Database error: {str(e)}"
+            )
 
         if not user:
             # Create new user
@@ -904,54 +911,32 @@ async def google_token_exchange(
         # Check if user exists
         try:
             user = db.query(User).filter(User.email == user_info["email"]).first()
-        except Exception as db_error:
+        except Exception as e:
+            db.rollback()
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Database query failed: {str(db_error)}"
+                detail=f"Database error: {str(e)}"
             )
 
         if not user:
             # Create new user
-            try:
-                user = User(
-                    email=user_info["email"],
-                    name=user_info.get("name", ""),
-                    email_verified=True,  # Google accounts are pre-verified
-                    auth_provider="google",
-                    auth_provider_id=user_info["id"]
-                )
-                db.add(user)
-                db.commit()
-                db.refresh(user)
-            except Exception as create_error:
-                db.rollback()
-                raise HTTPException(
-                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail=f"User creation failed: {str(create_error)}"
-                )
+            user = User(
+                email=user_info["email"],
+                name=user_info.get("name", ""),
+                email_verified=True,  # Google accounts are pre-verified
+                auth_provider="google",
+                auth_provider_id=user_info["id"]
+            )
+            db.add(user)
+            db.commit()
+            db.refresh(user)
         else:
             # Update existing user with Google info if not already set
-            try:
-                if not user.auth_provider:
-                    user.auth_provider = "google"
-                    user.auth_provider_id = user_info["id"]
-                    db.commit()
-            except Exception as update_error:
-                db.rollback()
-                raise HTTPException(
-                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail=f"User update failed: {str(update_error)}"
-                )
+            if not user.auth_provider:
+                user.auth_provider = "google"
+                user.auth_provider_id = user_info["id"]
+                db.commit()
 
-        # Create tokens
-        try:
-            access_token = create_access_token({"sub": str(user.id), "email": user.email})
-            refresh_token = create_refresh_token({"sub": str(user.id), "email": user.email})
-        except Exception as jwt_error:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"JWT token creation failed: {str(jwt_error)}"
-            )
         # Create tokens
         access_token = create_access_token({"sub": str(user.id), "email": user.email})
         refresh_token = create_refresh_token({"sub": str(user.id), "email": user.email})
@@ -1052,57 +1037,27 @@ async def github_token_exchange(
         if not primary_email:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-        # Check if user exists
-        try:
-            user = db.query(User).filter(User.email == primary_email).first()
-        except Exception as db_error:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Database query failed: {str(db_error)}"
+                detail="Unable to retrieve email from GitHub"
             )
+
+        # Check if user exists
+        user = db.query(User).filter(User.email == primary_email).first()
 
         if not user:
             # Create new user
-            try:
-                user = User(
-                    email=primary_email,
-                    name=user_info.get("name", user_info.get("login", "")),
-                    email_verified=True,  # GitHub emails are verified
-                    auth_provider="github",
-                    auth_provider_id=str(user_info["id"])
-                )
-                db.add(user)
-                db.commit()
-                db.refresh(user)
-            except Exception as create_error:
-                db.rollback()
-                raise HTTPException(
-                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail=f"User creation failed: {str(create_error)}"
-                )
+            user = User(
+                email=primary_email,
+                name=user_info.get("name", user_info.get("login", "")),
+                email_verified=True,  # GitHub accounts are pre-verified
+                auth_provider="github",
+                auth_provider_id=str(user_info["id"])
+            )
+            db.add(user)
+            db.commit()
+            db.refresh(user)
         else:
             # Update existing user with GitHub info if not already set
-            try:
-                if not user.auth_provider:
-                    user.auth_provider = "github"
-                    user.auth_provider_id = str(user_info["id"])
-                    db.commit()
-            except Exception as update_error:
-                db.rollback()
-                raise HTTPException(
-                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail=f"User update failed: {str(update_error)}"
-                )
-
-        # Create tokens
-        try:
-            access_token = create_access_token({"sub": str(user.id), "email": user.email})
-            refresh_token = create_refresh_token({"sub": str(user.id), "email": user.email})
-        except Exception as jwt_error:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"JWT token creation failed: {str(jwt_error)}"
-            )
+            if not user.auth_provider:
                 user.auth_provider = "github"
                 user.auth_provider_id = str(user_info["id"])
                 db.commit()
