@@ -91,20 +91,20 @@ class Settings(BaseSettings):
     @property
     def google_redirect_uri(self) -> str:
         if self.ENVIRONMENT == "production":
-            return "https://api.envoyou.com/auth/google/callback"
+            return "https://app.envoyou.com/auth/google/callback"
         else:
             return "http://localhost:3001/auth/google/callback"
 
     @property
     def github_redirect_uri(self) -> str:
         if self.ENVIRONMENT == "production":
-            return "https://api.envoyou.com/auth/github/callback"
+            return "https://app.envoyou.com/auth/github/callback"
         else:
             return "http://localhost:3001/auth/github/callback"
 
     # For backward compatibility
-    GOOGLE_REDIRECT_URI: str = "https://api.envoyou.com/auth/google/callback"
-    GITHUB_REDIRECT_URI: str = "https://api.envoyou.com/auth/github/callback"
+    GOOGLE_REDIRECT_URI: str = "https://app.envoyou.com/auth/google/callback"
+    GITHUB_REDIRECT_URI: str = "https://app.envoyou.com/auth/github/callback"
 
     # JWT Configuration
     JWT_SECRET_KEY: str  # Required - no default for security
