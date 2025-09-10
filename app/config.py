@@ -67,6 +67,23 @@ class Settings(BaseSettings):
     SENDGRID_API_KEY: Optional[str] = None
     EMAIL_OFFLINE_MODE: bool = False
 
+    # OAuth Configuration
+    ENABLE_SOCIAL_AUTH: bool = True
+    GOOGLE_CLIENT_ID: Optional[str] = None
+    GOOGLE_CLIENT_SECRET: Optional[str] = None
+    GITHUB_CLIENT_ID: Optional[str] = None
+    GITHUB_CLIENT_SECRET: Optional[str] = None
+
+    # OAuth Redirect URIs
+    GOOGLE_REDIRECT_URI: str = "https://app.envoyou.com/auth/google/callback"
+    GITHUB_REDIRECT_URI: str = "https://app.envoyou.com/auth/github/callback"
+
+    # JWT Configuration
+    JWT_SECRET_KEY: str = "your-secret-key-change-in-production"
+    JWT_ALGORITHM: str = "HS256"
+    JWT_ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+    JWT_REFRESH_TOKEN_EXPIRE_DAYS: int = 7
+
 
 # Buat satu instance settings yang dapat digunakan kembali di seluruh aplikasi
 settings = Settings()

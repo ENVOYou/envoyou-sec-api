@@ -30,7 +30,7 @@ def main():
     project_root = setup_environment()
     
     # Import after path setup
-    from api.api_server import app
+    from app.api_server import app
     
     # Configure for production/cloud deployment
     port = int(os.environ.get('PORT', 5000))
@@ -45,13 +45,15 @@ def main():
     print(f"   Project root: {project_root}")
     print(f"   Host: {host}")
     
-    # Run the Flask app
+    # Run the FastAPI app with uvicorn
     try:
-        app.run(
+        import uvicorn
+        uvicorn.run(
+            "app.api_server:app",
             host=host,
             port=port,
-            debug=debug,
-            threaded=True
+            reload=debug,
+            log_level="info" if not debug else "debug"
         )
     except Exception as e:
         print(f"❌ Failed to start server: {e}")

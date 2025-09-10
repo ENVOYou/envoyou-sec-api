@@ -18,10 +18,16 @@ CREATE TABLE IF NOT EXISTS users (
   password_reset_expires TIMESTAMP,
   two_factor_secret TEXT,
   two_factor_enabled BOOLEAN DEFAULT FALSE,
+  auth_provider TEXT,  -- 'google', 'github', etc.
+  auth_provider_id TEXT,  -- ID from the OAuth provider
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   last_login TIMESTAMP
 );
+
+-- Migration: Add OAuth fields to users table (run this if upgrading existing database)
+-- ALTER TABLE users ADD COLUMN auth_provider TEXT;
+-- ALTER TABLE users ADD COLUMN auth_provider_id TEXT;
 
 -- API Keys table
 CREATE TABLE IF NOT EXISTS api_keys (
