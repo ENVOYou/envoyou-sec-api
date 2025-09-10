@@ -48,9 +48,10 @@ from app.utils.security import is_public_endpoint, validate_api_key, rate_limit_
 from app.utils.security_middleware import SecurityMiddleware
 
 # CORS
-cors_origins = settings.CORS_ORIGINS # Use settings for CORS origins
-if cors_origins != '*' and isinstance(cors_origins, str):
-    cors_origins = [origin.strip() for origin in cors_origins.split(",")]
+cors_origins = settings.cors_origins_list  # Use the new property that handles multiple env vars
+if cors_origins != ['*'] and isinstance(cors_origins, list):
+    # Already parsed by the property
+    pass
 else:
     cors_origins = ["*"]
 app.add_middleware(
