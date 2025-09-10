@@ -3,6 +3,7 @@ from fastapi.responses import JSONResponse
 import os
 import sys
 from datetime import datetime, timezone
+from app.utils import cache as cache_util
 
 router = APIRouter()
 
@@ -12,7 +13,7 @@ async def health_check():
     Comprehensive health check for AWS App Runner and monitoring.
     Returns detailed system status information.
     """
-    cache_timestamp = os.getenv("CACHE_TIMESTAMP")
+    cache_timestamp = cache_util.get_cache_timestamp()
     
     health_status = {
         "status": "success",
