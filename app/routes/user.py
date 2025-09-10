@@ -70,6 +70,13 @@ class SessionResponse(BaseModel):
 class SessionListResponse(BaseModel):
     sessions: list[SessionResponse]
 
+class UserStatsResponse(BaseModel):
+    total_calls: int
+    monthly_calls: int
+    quota: int
+    active_keys: int
+    last_activity: Optional[str]
+
 # Dependency to get current user
 async def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(security),
@@ -100,6 +107,49 @@ async def get_current_user(
 async def get_user_profile(current_user: User = Depends(get_current_user)):
     """Get current user profile"""
     return UserProfileResponse(**current_user.to_dict())
+
+@router.get("/stats", response_model=UserStatsResponse)
+async def get_user_stats(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Get user usage statistics"""
+    from sqlalchemy import func
+    from datetime import datetime, timedelta
+
+    # Get all active API keys for the user
+    api_keys = db.query(APIKey).filter(
+        APIKey.user_id == current_user.id,
+        APIKey.is_active == True
+    ).all()
+
+    # Calculate total calls across all API keys
+    total_calls = sum(key.usage_count for key in api_keys)
+
+    # Calculate monthly calls (last 30 days)
+    thirty_days_ago = datetime.utcnow() - timedelta(days=30)
+    monthly_calls = 0
+    # For now, we'll use total calls as monthly calls since we don't have detailed usage logs
+    # In a real implementation, you'd have a usage_logs table to track this properly
+    monthly_calls = total_calls
+
+    # Get quota (this could be based on user plan, for now using a default)
+    quota = 5000  # Default quota
+
+    # Count active keys
+    active_keys = len(api_keys)
+
+    # Get last activity (most recent last_used across all keys)
+    last_activity = None
+    if api_keys:
+        recent_key = max(api_keys, key=lambda k: k.last_used or datetime.min)
+        if recent_key.last_used:
+            last_activity = recent_key.last_used.isoformat()
+
+    return UserStatsResponse(
+        total_calls=total_calls,
+        monthly_calls=monthly_calls,
+        quota=quota,
+        active_keys=active_keys,
+        last_activity=last_activity
+    )
 
 @router.put("/profile", response_model=UserProfileResponse)
 async def update_user_profile(
