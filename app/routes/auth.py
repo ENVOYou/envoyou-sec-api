@@ -749,7 +749,7 @@ async def google_login():
     auth_url = "https://accounts.google.com/o/oauth2/auth"
     params = {
         "client_id": settings.GOOGLE_CLIENT_ID,
-        "redirect_uri": settings.GOOGLE_REDIRECT_URI,
+        "redirect_uri": settings.google_redirect_uri,
         "scope": "openid email profile",
         "response_type": "code",
         "state": state,
@@ -790,7 +790,7 @@ async def google_callback(
             "client_secret": settings.GOOGLE_CLIENT_SECRET,
             "code": callback_data.code,
             "grant_type": "authorization_code",
-            "redirect_uri": settings.GOOGLE_REDIRECT_URI
+            "redirect_uri": settings.google_redirect_uri
         }
 
         async with httpx.AsyncClient() as client:
@@ -880,7 +880,7 @@ async def github_login():
     auth_url = "https://github.com/login/oauth/authorize"
     params = {
         "client_id": settings.GITHUB_CLIENT_ID,
-        "redirect_uri": settings.GITHUB_REDIRECT_URI,
+        "redirect_uri": settings.github_redirect_uri,
         "scope": "user:email",
         "state": state
     }
@@ -917,7 +917,7 @@ async def github_callback(
             "client_id": settings.GITHUB_CLIENT_ID,
             "client_secret": settings.GITHUB_CLIENT_SECRET,
             "code": callback_data.code,
-            "redirect_uri": settings.GITHUB_REDIRECT_URI
+            "redirect_uri": settings.github_redirect_uri
         }
 
         async with httpx.AsyncClient() as client:

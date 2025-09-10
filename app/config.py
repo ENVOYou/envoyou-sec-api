@@ -1,7 +1,8 @@
 from __future__ import annotations
 
-from typing import Optional
+from typing import Optional, List
 
+from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -35,8 +36,20 @@ class Settings(BaseSettings):
     # Logging
     LOG_FILE: Optional[str] = None
 
-    #CORS Origins
-    CORS_ORIGINS: str = "*"
+    #CORS Origins - Support multiple environment variable names for compatibility
+    CORS_ORIGINS: List[str] = ["*"]  # Legacy support
+    ALLOWED_ORIGINS: Optional[str] = None  # New Railway variable
+    CORS_ALLOWED_ORIGINS: Optional[str] = None  # Alternative Railway variable
+
+    @property
+    def cors_origins_list(self) -> List[str]:
+        """Get CORS origins with priority: CORS_ALLOWED_ORIGINS > ALLOWED_ORIGINS > CORS_ORIGINS"""
+        if self.CORS_ALLOWED_ORIGINS:
+            return [origin.strip() for origin in self.CORS_ALLOWED_ORIGINS.split(",")]
+        elif self.ALLOWED_ORIGINS:
+            return [origin.strip() for origin in self.ALLOWED_ORIGINS.split(",")]
+        else:
+            return self.CORS_ORIGINS
 
     # Sumber Data ISO
     ISO_API_BASE: Optional[str] = None
@@ -74,15 +87,50 @@ class Settings(BaseSettings):
     GITHUB_CLIENT_ID: Optional[str] = None
     GITHUB_CLIENT_SECRET: Optional[str] = None
 
-    # OAuth Redirect URIs
+    # OAuth Redirect URIs - Dynamic based on environment
+    @property
+    def google_redirect_uri(self) -> str:
+        if self.ENVIRONMENT == "production":
+            return "https://app.envoyou.com/auth/google/callback"
+        else:
+            return "http://localhost:3001/auth/google/callback"
+
+    @property
+    def github_redirect_uri(self) -> str:
+        if self.ENVIRONMENT == "production":
+            return "https://app.envoyou.com/auth/github/callback"
+        else:
+            return "http://localhost:3001/auth/github/callback"
+
+    # For backward compatibility
     GOOGLE_REDIRECT_URI: str = "https://app.envoyou.com/auth/google/callback"
     GITHUB_REDIRECT_URI: str = "https://app.envoyou.com/auth/github/callback"
 
     # JWT Configuration
-    JWT_SECRET_KEY: str = "your-secret-key-change-in-production"
+    JWT_SECRET_KEY: str  # Required - no default for security
     JWT_ALGORITHM: str = "HS256"
     JWT_ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     JWT_REFRESH_TOKEN_EXPIRE_DAYS: int = 7
+
+    @model_validator(mode='after')
+    def set_production_defaults(self) -> 'Settings':
+        """Set production-specific defaults based on ENVIRONMENT"""
+        if self.ENVIRONMENT == "production":
+            # Only set CORS defaults if no CORS variables are explicitly configured
+            cors_configured = (
+                self.CORS_ALLOWED_ORIGINS is not None or
+                self.ALLOWED_ORIGINS is not None or
+                (self.CORS_ORIGINS != ["*"] and self.CORS_ORIGINS != [])
+            )
+
+            if not cors_configured:
+                self.CORS_ORIGINS = ["https://app.envoyou.com", "https://www.envoyou.com"]
+
+            # More restrictive logging for production
+            if hasattr(self, 'LOG_LEVEL') and self.LOG_LEVEL == "DEBUG":
+                self.LOG_LEVEL = "INFO"
+
+        return self
 
 
 # Buat satu instance settings yang dapat digunakan kembali di seluruh aplikasi
