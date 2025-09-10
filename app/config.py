@@ -114,6 +114,12 @@ class Settings(BaseSettings):
     JWT_ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     JWT_REFRESH_TOKEN_EXPIRE_DAYS: int = 7
 
+    # Supabase Configuration
+    SUPABASE_URL: Optional[str] = None
+    SUPABASE_ANON_KEY: Optional[str] = None
+    SUPABASE_JWT_SECRET: Optional[str] = None
+    ENABLE_SUPABASE_AUTH: bool = False
+
     @model_validator(mode='after')
     def set_production_defaults(self) -> 'Settings':
         """Set production-specific defaults based on ENVIRONMENT"""
