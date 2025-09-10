@@ -1,7 +1,7 @@
 # =============================================================================
 # ENVOYOU PRODUCTION ENVIRONMENT VARIABLES CHECKLIST
 # =============================================================================
-# Environment Variables yang PERLU didapatkan untuk Production Deployment
+# Environment Variables needed for Production Deployment
 # =============================================================================
 
 ## 🚨 PRIORITY 1: CRITICAL (Harus ada sebelum deployment)
@@ -22,7 +22,7 @@
 ### Backup & Recovery
 - [ ] BACKUP_ENCRYPTION_KEY="your-backup-encryption-key"
 
-## 🚨 PRIORITY 2: HIGH (Penting untuk production features)
+## 🚨 PRIORITY 2: HIGH (Important for production features)
 
 ### Payment Processing
 - [ ] STRIPE_SECRET_KEY="sk_live_your-stripe-secret-key"
@@ -37,7 +37,7 @@
 - [ ] HOTJAR_ID="your-hotjar-id"
 - [ ] MIXPANEL_TOKEN="your-mixpanel-token"
 
-## 🚨 PRIORITY 3: MEDIUM (Untuk monitoring & alerts)
+## 🚨 PRIORITY 3: MEDIUM (For monitoring & alerts)
 
 ### Alert Webhooks
 - [ ] SLACK_WEBHOOK_URL="https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK"
@@ -48,7 +48,7 @@
 - [ ] ZENDESK_SUBDOMAIN="envoyou"
 - [ ] FRESHWORKS_WIDGET_ID="your-freshworks-widget-id"
 
-## ✅ PRIORITY 4: OPTIONAL (Untuk advanced features)
+## ✅ PRIORITY 4: OPTIONAL (For advanced features)
 
 ### Social Authentication (sudah ada Google & GitHub)
 - [ ] FACEBOOK_CLIENT_ID="your-facebook-client-id"
@@ -62,7 +62,7 @@
 - [ ] DATADOG_API_KEY="your-datadog-api-key"
 - [ ] NEW_RELIC_LICENSE_KEY="your-new-relic-license-key"
 
-## 📋 SUDAH TERSEDIA (Tidak perlu diubah)
+## 📋 ALREADY AVAILABLE (No changes needed)
 
 ### Infrastructure (sudah configured)
 - [x] DATABASE_URL (Supabase)
@@ -84,33 +84,33 @@
 - [x] SESSION_SECRET
 
 # =============================================================================
-# CARA MENDAPATKAN ENVIRONMENT VARIABLES
+# HOW TO GET ENVIRONMENT VARIABLES
 # =============================================================================
 
-## 1. AWS S3 (SKIP - menggunakan Supabase Storage)
+## 1. AWS S3 (SKIP - using Supabase Storage)
 ```
-✅ SUDAH TIDAK DIPERLUKAN
-- Sudah menggunakan Supabase Storage dengan bucket: envoyou-cdn
-- CDN aktif di: https://cdn.envoyou.com
+✅ NO LONGER REQUIRED
+- Already using Supabase Storage with bucket: envoyou-cdn
+- CDN active at: https://cdn.envoyou.com
 - Status: Active and working
 ```
 
 ## 1.1. Supabase Storage (ALREADY ACTIVE ✅)
 ```
-✅ SUDAH DIKONFIGURASI
+✅ ALREADY CONFIGURED
 - Bucket: envoyou-cdn
 - CDN URL: https://cdn.envoyou.com
 - Status: Production ready
 ```
 
-## 2. Stripe (untuk payments)
-1. Buka Stripe Dashboard: https://dashboard.stripe.com/
-2. Buat produk dan harga (price)
+## 2. Stripe (for payments)
+1. Open Stripe Dashboard: https://dashboard.stripe.com/
+2. Create product and pricing
 3. Generate webhook endpoint
 4. Copy secret keys
 
 ## 3. PayPal (alternative payment)
-1. Buka PayPal Developer: https://developer.paypal.com/
+1. Open PayPal Developer: https://developer.paypal.com/
 2. Create app
 3. Get client ID & secret
 
