@@ -21,7 +21,7 @@ SESSION_SECRET="your-session-secret-here"
 
 ### 2. ☁️ AWS S3 CONFIGURATION (File Uploads) - OPTIONAL FOR NOW
 ```bash
-# ⏳ FUTURE CONSIDERATION: Saat sudah ada banyak users dan butuh cost optimization
+# ⏳ FUTURE CONSIDERATION: When you have many users and need cost optimization
 AWS_ACCESS_KEY_ID="your-aws-access-key-id"
 AWS_SECRET_ACCESS_KEY="your-aws-secret-access-key"
 AWS_S3_BUCKET="envoyou-uploads"
@@ -30,7 +30,7 @@ AWS_S3_REGION="ap-southeast-1"
 
 ### 2.1. 🟢 SUPABASE STORAGE (ALREADY CONFIGURED ✅)
 ```bash
-# ✅ SUDAH DIKONFIGURASI
+# ✅ ALREADY CONFIGURED
 SUPABASE_STORAGE_KEY="your-supabase-service-role-key"
 SUPABASE_STORAGE_BUCKET="envoyou-cdn"
 SUPABASE_STORAGE_URL="https://cdn.envoyou.com"
