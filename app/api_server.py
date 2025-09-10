@@ -42,6 +42,7 @@ from app.routes.global_data import router as global_router
 from app.routes.admin import router as admin_router
 from app.routes.auth import router as auth_router
 from app.routes.user import router as user_router
+from app.routes.supabase_auth import router as supabase_auth_router
 
 # Import security utilities
 from app.utils.security import is_public_endpoint, validate_api_key, rate_limit_dependency_factory
@@ -172,6 +173,7 @@ rate_limiter = rate_limit_dependency_factory()
 app.include_router(global_router, prefix="/global", dependencies=[Depends(api_key_dependency), Depends(rate_limiter)])
 app.include_router(admin_router, prefix="/admin")
 app.include_router(auth_router, prefix="/auth")
+app.include_router(supabase_auth_router, prefix="/auth")
 app.include_router(user_router, prefix="/user")
 
 @app.get("/", tags=["Health"])
