@@ -2,7 +2,7 @@
 # =============================================================================
 
 ## 📋 **PROBLEM IDENTIFIED**
-EEA (European Environment Agency) API mengembalikan 404 Not Found untuk dataset:
+EEA (European Environment Agency) API returns 404 Not Found for datasets:
 - `share-of-energy-from-renewable-sources`
 - `industrial-releases-of-pollutants-to-water`
 
@@ -83,7 +83,7 @@ curl -s "https://api.envoyou.com/global/cevs/Shell" \
   -H "X-API-Key: basic_HfmNPUJKZhMF7aj0AnBpsLK9w4pndXdeC87Q04HD"
 
 # Check logs for fallback usage
-grep "Menggunakan data fallback" /logs/app.log
+grep "Using fallback data" /logs/app.log
 ```
 
 ## 🔮 **FUTURE IMPROVEMENTS**
@@ -110,9 +110,9 @@ grep "Menggunakan data fallback" /logs/app.log
 
 ### **Log Messages to Monitor**
 ```
-✅ "Menggunakan data fallback untuk dataset: share-of-energy-from-renewable-sources"
-✅ "Dataset {dataset_id} tidak ditemukan di EEA API, menggunakan data fallback"
-⚠️  "Kesalahan jaringan saat mengambil data EEA"
+✅ "Using fallback data for dataset: share-of-energy-from-renewable-sources"
+✅ "Dataset {dataset_id} not found in EEA API, using fallback data"
+⚠️  "Network error when retrieving EEA data"
 ```
 
 ### **API Response Indicators**
