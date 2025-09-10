@@ -16,6 +16,7 @@ from ..utils.jwt import create_access_token, create_refresh_token, verify_token
 from ..utils.email import email_service
 from ..config import settings
 from ..middleware.supabase_auth import get_current_user, SupabaseUser
+from ..utils.session_manager import create_user_session, get_user_session, validate_user_session, delete_user_session
 
 router = APIRouter()
 security = HTTPBearer()
@@ -190,6 +191,21 @@ async def login(
         db.add(session)
         db.commit()
         
+        # Create Redis session if enabled
+        redis_session_id = None
+        if os.getenv("USE_REDIS_SESSIONS", "false").lower() == "true":
+            try:
+                redis_session_id = create_user_session(
+                    user_id=user.id,
+                    user_data=user.to_dict(),
+                    device_info=device_info,
+                    ip_address=ip_address
+                )
+                if redis_session_id:
+                    print(f"Redis session created: {redis_session_id}")
+            except Exception as e:
+                print(f"Redis session creation failed: {e}")
+        
         # Send login notification email
         try:
             from datetime import datetime
@@ -205,11 +221,52 @@ async def login(
         # Don't fail login if session creation fails
         print(f"Session creation failed: {e}")
     
-    return TokenResponse(
+    response_data = TokenResponse(
         access_token=access_token,
         refresh_token=refresh_token,
         user=user.to_dict()
     )
+    
+    # Add Redis session ID to response if available
+    if redis_session_id:
+        response_data.user["redis_session_id"] = redis_session_id
+    
+    return response_data
+
+@router.get("/sessions/redis/{session_id}")
+async def get_redis_session(session_id: str):
+    """Get Redis session information (for debugging/admin purposes)"""
+    if os.getenv("USE_REDIS_SESSIONS", "false").lower() != "true":
+        raise HTTPException(status_code=404, detail="Redis sessions not enabled")
+    
+    session_data = get_user_session(session_id)
+    if not session_data:
+        raise HTTPException(status_code=404, detail="Session not found")
+    
+    # Return session info without sensitive data
+    safe_data = {
+        "session_id": session_data.get("session_id"),
+        "user_id": session_data.get("user_id"),
+        "created_at": session_data.get("created_at"),
+        "last_active": session_data.get("last_active"),
+        "expires_at": session_data.get("expires_at"),
+        "device_info": session_data.get("device_info", {}),
+        "ip_address": session_data.get("ip_address")
+    }
+    
+    return {"status": "success", "session": safe_data}
+
+@router.delete("/sessions/redis/{session_id}")
+async def delete_redis_session(session_id: str):
+    """Delete Redis session"""
+    if os.getenv("USE_REDIS_SESSIONS", "false").lower() != "true":
+        raise HTTPException(status_code=404, detail="Redis sessions not enabled")
+    
+    success = delete_user_session(session_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="Session not found or could not be deleted")
+    
+    return {"status": "success", "message": "Session deleted"}
 
 @router.post("/refresh", response_model=TokenResponse)
 async def refresh_token(request: RefreshTokenRequest, db: Session = Depends(get_db)):
