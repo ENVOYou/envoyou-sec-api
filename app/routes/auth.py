@@ -810,6 +810,7 @@ async def google_callback(
         # Check if user exists
         try:
             user = db.query(User).filter(User.email == user_info["email"]).first()
+            print(f"DEBUG: Database query successful, user found: {user is not None}")
         except Exception as e:
             db.rollback()
             raise HTTPException(
@@ -911,6 +912,7 @@ async def google_token_exchange(
         # Check if user exists
         try:
             user = db.query(User).filter(User.email == user_info["email"]).first()
+            print(f"DEBUG: Database query successful, user found: {user is not None}")
         except Exception as e:
             db.rollback()
             raise HTTPException(
