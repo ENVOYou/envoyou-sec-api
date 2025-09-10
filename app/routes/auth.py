@@ -14,8 +14,8 @@ from ..models.api_key import APIKey
 from ..models.session import Session
 from ..utils.jwt import create_access_token, create_refresh_token, verify_token
 from ..utils.email import email_service
-from ..utils.email import email_service
 from ..config import settings
+from ..middleware.supabase_auth import get_current_user, SupabaseUser
 
 router = APIRouter()
 security = HTTPBearer()

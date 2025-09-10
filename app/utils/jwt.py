@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 from typing import Optional
-from jose import JWTError, jwt
+import jwt
 from pydantic import BaseModel
 import os
 
@@ -50,7 +50,9 @@ def verify_token(token: str, token_type: str = "access"):
         if email is None or token_type_in_payload != token_type:
             return None
         return TokenData(email=email)
-    except JWTError:
+    except jwt.ExpiredSignatureError:
+        return None
+    except jwt.InvalidTokenError:
         return None
 
 def get_token_expiration(token: str):
@@ -60,6 +62,8 @@ def get_token_expiration(token: str):
         exp = payload.get("exp")
         if exp:
             return datetime.fromtimestamp(exp)
-    except JWTError:
+    except jwt.ExpiredSignatureError:
+        pass
+    except jwt.InvalidTokenError:
         pass
     return None
