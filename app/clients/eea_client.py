@@ -10,14 +10,14 @@ from functools import lru_cache
 
 from app.utils.mappings import normalize_country_name
 
-# Pastikan Anda telah menambahkan 'pyarrow' ke requirements.txt
+# Make sure you have added 'pyarrow' to requirements.txt
 # pip install pyarrow
 
 logger = logging.getLogger(__name__)
 
 class EEAClient:
     """
-    Klien untuk berinteraksi dengan EEA Downloads API (Parquet).
+    Client for interacting with EEA Downloads API (Parquet).
     API Docs: https://eeadmz1-downloads-api-appservice.azurewebsites.net/swagger/index.html
     """
     BASE_URL = "https://eeadmz1-downloads-api-appservice.azurewebsites.net/api/v1/public"
@@ -29,63 +29,63 @@ class EEAClient:
             "User-Agent": f"project-permit-api/1.0 (+{os.getenv('GITHUB_REPO_URL', 'https://github.com/hk-dev13')})"
         })
 
-    @lru_cache(maxsize=10) # Cache sederhana untuk menghindari pengunduhan berulang
+    @lru_cache(maxsize=10) # Simple cache to avoid repeated downloads
     def _get_parquet_data(self, dataset_id: str) -> List[Dict[str, Any]]:
         """
-        Menemukan, mengunduh, dan mengurai dataset Parquet dari EEA API.
-        Ini menerapkan alur kerja 2 langkah:
-        1. Dapatkan metadata file untuk menemukan URL unduhan.
-        2. Unduh dan baca file Parquet.
+        Find, download, and parse Parquet dataset from EEA API.
+        This implements a 2-step workflow:
+        1. Get file metadata to find download URL.
+        2. Download and read Parquet file.
         """
-        logger.info(f"Mencari file untuk dataset EEA: {dataset_id}")
+        logger.info(f"Searching for file for EEA dataset: {dataset_id}")
         files_url = f"{self.BASE_URL}/datasets/{dataset_id}/files"
 
         try:
-            # Langkah 1: Dapatkan URL unduhan
+            # Step 1: Get download URL
             resp_files = self.session.get(files_url, timeout=30)
             resp_files.raise_for_status()
             files_metadata = resp_files.json()
 
-            # Cari file Parquet pertama yang tersedia
+            # Find first available Parquet file
             download_url = next((f['links']['download'] for f in files_metadata if f['name'].endswith('.parquet')), None)
 
             if not download_url:
-                logger.warning(f"Tidak ada file Parquet yang ditemukan untuk dataset {dataset_id}, menggunakan data fallback")
+                logger.warning(f"No Parquet file found for dataset {dataset_id}, using fallback data")
                 return self._get_fallback_data(dataset_id)
 
-            # Langkah 2: Unduh dan baca file Parquet
-            logger.info(f"Mengunduh data Parquet dari: {download_url}")
-            resp_data = self.session.get(download_url, timeout=90) # Timeout lebih lama untuk unduhan
+            # Step 2: Download and read Parquet file
+            logger.info(f"Downloading Parquet data from: {download_url}")
+            resp_data = self.session.get(download_url, timeout=90) # Longer timeout for downloads
             resp_data.raise_for_status()
 
-            # Gunakan pandas untuk membaca konten biner
+            # Use pandas to read binary content
             df = pd.read_parquet(io.BytesIO(resp_data.content))
 
-            # Bersihkan nama kolom untuk konsistensi (opsional tapi disarankan)
+            # Clean column names for consistency (optional but recommended)
             df.columns = [col.strip().lower().replace(' ', '_') for col in df.columns]
 
             return df.to_dict(orient="records")
 
         except requests.exceptions.HTTPError as e:
             if e.response.status_code == 404:
-                logger.warning(f"Dataset {dataset_id} tidak ditemukan di EEA API, menggunakan data fallback")
+                logger.warning(f"Dataset {dataset_id} not found in EEA API, using fallback data")
                 return self._get_fallback_data(dataset_id)
             else:
-                logger.error(f"HTTP error saat mengambil data EEA untuk {dataset_id}: {e}")
+                logger.error(f"HTTP error when retrieving EEA data for {dataset_id}: {e}")
         except requests.exceptions.RequestException as e:
-            logger.error(f"Kesalahan jaringan saat mengambil data EEA untuk {dataset_id}: {e}")
+            logger.error(f"Network error when retrieving EEA data for {dataset_id}: {e}")
         except Exception as e:
-            logger.error(f"Kesalahan saat memproses data Parquet untuk {dataset_id}: {e}")
+            logger.error(f"Error processing Parquet data for {dataset_id}: {e}")
 
-        # Fallback ke data statis jika semua gagal
+        # Fallback to static data if everything fails
         return self._get_fallback_data(dataset_id)
 
     def _get_fallback_data(self, dataset_id: str) -> List[Dict[str, Any]]:
         """
-        Menyediakan data fallback statis ketika EEA API tidak tersedia.
-        Data ini didasarkan pada nilai rata-rata global dan dapat diperbarui secara manual.
+        Provides static fallback data when EEA API is unavailable.
+        This data is based on global average values and can be updated manually.
         """
-        logger.info(f"Menggunakan data fallback untuk dataset: {dataset_id}")
+        logger.info(f"Using fallback data for dataset: {dataset_id}")
         
         # Set environment variable to indicate fallback is being used
         if dataset_id == "share-of-energy-from-renewable-sources":
@@ -94,7 +94,7 @@ class EEAClient:
             os.environ["EEA_POLLUTION_SOURCE"] = "EEA Fallback Data (API Unavailable)"
 
         if dataset_id == "share-of-energy-from-renewable-sources":
-            # Data energi terbarukan global (2023 estimates)
+            # Global renewable energy data (2023 estimates)
             return [
                 {
                     "country": "Germany",
@@ -129,7 +129,7 @@ class EEAClient:
             ]
 
         elif dataset_id == "industrial-releases-of-pollutants-to-water":
-            # Data polusi industri global (simulasi tren)
+            # Global industrial pollution data (simulated trends)
             return [
                 {
                     "year": 2018,
@@ -174,20 +174,20 @@ class EEAClient:
             ]
 
         else:
-            logger.warning(f"Tidak ada data fallback untuk dataset: {dataset_id}")
+            logger.warning(f"No fallback data available for dataset: {dataset_id}")
             return []
 
     def get_countries_renewables(self) -> List[Dict[str, Any]]:
         """
-        Mengambil dan menormalkan data pangsa energi terbarukan per negara.
+        Retrieve and normalize renewable energy share data per country.
         """
-        # ID ini harus diverifikasi dari API, ini adalah contoh
+        # This ID should be verified from API, this is an example
         dataset_id = "share-of-energy-from-renewable-sources" 
         raw_data = self._get_parquet_data(dataset_id)
         
         normalized_data = []
         for record in raw_data:
-            # Kolom di-lowercase dan underscore oleh _get_parquet_data
+            # Columns are lowercased and underscored by _get_parquet_data
             country = record.get("country")
             if not country:
                 continue
@@ -195,14 +195,14 @@ class EEAClient:
             normalized_data.append({
                 "country": country,
                 "renewable_energy_share_2020": record.get("renewable_energy_share_2020"),
-                "renewable_energy_share_2021_proxy": record.get("renewable_energy_share_2021_(proxy)"), # Sesuaikan dengan nama kolom yang sebenarnya
+                "renewable_energy_share_2021_proxy": record.get("renewable_energy_share_2021_(proxy)"), # Adjust to actual column name
                 "target_2020": record.get("2020_target"),
             })
         return normalized_data
 
     def get_country_renewables(self, country: Optional[str]) -> Optional[Dict[str, Any]]:
         """
-        Mengambil data energi terbarukan untuk negara tertentu.
+        Retrieve renewable energy data for a specific country.
         """
         if not country:
             return None
@@ -217,9 +217,9 @@ class EEAClient:
 
     def get_industrial_pollution(self) -> List[Dict[str, Any]]:
         """
-        Mengambil dan menormalkan data tren polusi industri.
+        Retrieve and normalize industrial pollution trend data.
         """
-        # ID ini harus diverifikasi dari API, ini adalah contoh
+        # This ID should be verified from API, this is an example
         dataset_id = "industrial-releases-of-pollutants-to-water"
         raw_data = self._get_parquet_data(dataset_id)
         
@@ -250,7 +250,7 @@ class EEAClient:
 
     def compute_pollution_trend(self, records: List[Dict[str, Any]], window: int = 3) -> Dict[str, Any]:
         """
-        Menghitung tren sederhana berdasarkan data polusi.
+        Calculate simple trend based on pollution data.
         """
         def slope_for(key: str) -> Dict[str, Any]:
             vals = [r.get(key) for r in records if isinstance(r.get(key), (int, float))]
