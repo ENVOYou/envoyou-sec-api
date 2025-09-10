@@ -15,7 +15,7 @@ class User(Base):
     
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     email = Column(String, unique=True, index=True, nullable=False)
-    password_hash = Column(String, nullable=False)
+    password_hash = Column(String, nullable=True)  # Allow null for OAuth users
     name = Column(String, nullable=False)
     company = Column(String)
     job_title = Column(String)
@@ -44,6 +44,8 @@ class User(Base):
     
     def verify_password(self, password: str) -> bool:
         """Verify a password against the stored hash"""
+        if self.password_hash is None:
+            return False  # OAuth users don't have passwords
         return pwd_context.verify(password, self.password_hash)
     
     def generate_verification_token(self):
