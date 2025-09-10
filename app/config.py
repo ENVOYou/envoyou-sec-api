@@ -12,9 +12,11 @@ class Settings(BaseSettings):
     Secara otomatis memuat variabel dari environment atau file .env.
     """
 
-    # Konfigurasi Pydantic untuk membaca dari file .env
+    # Konfigurasi Pydantic untuk membaca dari file .env (hanya untuk development)
     model_config = SettingsConfigDict(
-        env_file=".env", env_file_encoding="utf-8", extra="ignore"
+        env_file=".env" if __import__("os").getenv("ENVIRONMENT") != "production" else None,
+        env_file_encoding="utf-8", 
+        extra="ignore"
     )
 
     # Pengaturan Aplikasi Umum
