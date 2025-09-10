@@ -4,6 +4,7 @@ import os
 import sys
 from datetime import datetime, timezone
 from app.utils import cache as cache_util
+from app.utils.redis_utils import redis_health_check
 
 router = APIRouter()
 
@@ -14,6 +15,7 @@ async def health_check():
     Returns detailed system status information.
     """
     cache_timestamp = cache_util.get_cache_timestamp()
+    redis_status = redis_health_check()
     
     health_status = {
         "status": "success",
@@ -26,11 +28,13 @@ async def health_check():
             "system": {
                 "cache_status": "active" if cache_timestamp else "empty",
                 "last_cache_update": datetime.fromtimestamp(float(cache_timestamp)).isoformat() if cache_timestamp else None,
+                "redis": redis_status
             },
             "services": {
                 "api_server": "running",
                 "security": "enabled" if os.getenv("API_KEYS") else "disabled",
-                "rate_limiting": "active"
+                "rate_limiting": "redis" if redis_status.get("available") else "memory",
+                "session_storage": "redis" if redis_status.get("available") else "database"
             }
         }
     }

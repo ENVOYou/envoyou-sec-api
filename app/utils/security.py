@@ -10,19 +10,8 @@ from fastapi import Request, HTTPException
 
 logger = logging.getLogger(__name__)
 
-# Simple in-memory rate limiter storage
-_rate_limit_storage = {}
-
-def simple_rate_limit(key: str, limit: int, window: int = 60) -> bool:
-    now = time.time()
-    _rate_limit_storage[key] = [
-        ts for ts in _rate_limit_storage.get(key, []) if now - ts < window
-    ]
-    current_count = len(_rate_limit_storage[key])
-    if current_count >= limit:
-        return False
-    _rate_limit_storage.setdefault(key, []).append(now)
-    return True
+# Import Redis utilities
+from .redis_utils import redis_rate_limit
 
 # API Keys
 VALID_API_KEYS: Dict[str, Dict[str, Any]] = {
@@ -115,7 +104,7 @@ def rate_limit_dependency_factory():
         # Use the tier-based limit if available, otherwise a default.
         limit = client_info.get("requests_per_minute", 30) if client_info else 15
 
-        if not simple_rate_limit(api_key_or_ip, limit, 60):
+        if not redis_rate_limit(api_key_or_ip, limit, 60):
             raise HTTPException(
                 status_code=429,
                 detail={

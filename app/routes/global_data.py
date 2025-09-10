@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Query, Depends
+from fastapi import APIRouter, HTTPException, Query, Depends, Request
 from fastapi.responses import JSONResponse
 from datetime import datetime
 import logging
@@ -14,6 +14,7 @@ from app.clients.campd_client import CAMDClient
 from app.services.cevs_aggregator import compute_cevs_for_company
 from app.utils.security import require_api_key
 from app.services.fallback_sources import fetch_us_emissions_data
+from app.utils.response_cache import response_cache
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -139,9 +140,17 @@ async def global_emissions(
 
 
 @router.get("/emissions/stats", dependencies=[Depends(require_api_key)])
-async def global_emissions_stats():
+async def global_emissions_stats(request: Request):
     """Basic stats aggregated by state, pollutant, and year."""
     try:
+        # Try to get cached response first
+        cached_response = response_cache.get(request)
+        if cached_response:
+            logger.info("Returning cached emissions stats")
+            return JSONResponse(content=cached_response, status_code=200)
+
+        # Cache miss - compute fresh data
+        logger.info("Computing fresh emissions stats")
         data = _get_cached_data()
 
         by_state: Dict[str, int] = {}
@@ -158,7 +167,7 @@ async def global_emissions_stats():
             by_pollutant[pol] = by_pollutant.get(pol, 0) + 1
             by_year[year] = by_year.get(year, 0) + 1
 
-        return JSONResponse(content={
+        response_data = {
             "status": "success",
             "statistics": {
                 "by_state": by_state,
@@ -167,7 +176,13 @@ async def global_emissions_stats():
                 "total_records": len(data),
             },
             "retrieved_at": datetime.now().isoformat(),
-        })
+            "cached": False
+        }
+
+        # Cache the response for 30 minutes
+        response_cache.set(request, response_data, ttl=1800)
+
+        return JSONResponse(content=response_data, status_code=200)
 
     except Exception as e:
         logger.error(f"Error in /global/emissions/stats: {e}")
