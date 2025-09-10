@@ -29,6 +29,8 @@ class User(Base):
     last_login = Column(DateTime(timezone=True))
     two_factor_secret = Column(String)
     two_factor_enabled = Column(Boolean, default=False)
+    auth_provider = Column(String)  # 'google', 'github', etc.
+    auth_provider_id = Column(String)  # ID from the OAuth provider
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
     
@@ -117,6 +119,7 @@ class User(Base):
             "timezone": self.timezone,
             "email_verified": self.email_verified,
             "two_factor_enabled": self.two_factor_enabled,
+            "auth_provider": self.auth_provider,
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "last_login": self.last_login.isoformat() if self.last_login else None
         }
