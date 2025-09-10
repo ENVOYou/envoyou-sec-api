@@ -173,9 +173,6 @@ app.include_router(admin_router, prefix="/admin")
 app.include_router(auth_router, prefix="/auth")
 app.include_router(user_router, prefix="/user")
 
-# Public endpoints (no authentication required)
-app.include_router(auth_router, prefix="/api/v1", tags=["Public API"])
-
 @app.get("/", tags=["Health"])
 async def home():
     api_info = {
