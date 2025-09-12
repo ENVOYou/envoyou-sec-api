@@ -1,13 +1,25 @@
 """
 Redis-based session management utilities.
-This module provides session management using Redis as the primary storage.
+This module provides se        if session_data:
+            # Check if session is expired
+            expires_at = datetime.fromisoformat(session_data.get("expires_at", ""))
+            if datetime.now(UTC) > expires_at:
+                # Session expired, delete it
+                self.delete_session(session_id)
+                return None
+
+            # Update last active time
+            session_data["last_active"] = datetime.now(UTC).isoformat()
+            redis_store_session(session_id, session_data, self.session_ttl)
+
+            return session_dataent using Redis as the primary storage.
 """
 
 from typing import Dict, Any, Optional
 import uuid
 import hashlib
 import json
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, UTC
 import logging
 
 from .redis_utils import redis_store_session, redis_get_session, redis_delete_session, redis_update_session_activity
@@ -44,9 +56,9 @@ class RedisSessionManager:
             "user_data": user_data,
             "device_info": device_info or {},
             "ip_address": ip_address,
-            "created_at": datetime.utcnow().isoformat(),
-            "last_active": datetime.utcnow().isoformat(),
-            "expires_at": (datetime.utcnow() + timedelta(seconds=self.session_ttl)).isoformat()
+            "created_at": datetime.now(UTC).isoformat(),
+            "last_active": datetime.now(UTC).isoformat(),
+            "expires_at": (datetime.now(UTC) + timedelta(seconds=self.session_ttl)).isoformat()
         }
 
         if redis_store_session(session_id, session_data, self.session_ttl):

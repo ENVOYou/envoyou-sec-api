@@ -6,9 +6,58 @@ from fastapi.openapi.utils import get_openapi
 from fastapi.staticfiles import StaticFiles
 import os
 from dotenv import load_dotenv
+from contextlib import asynccontextmanager
 
 # Load environment variables from .env file
 load_dotenv()
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup code
+    from app.models.database import create_tables
+    create_tables()
+    
+    port = settings.PORT # Use settings for port
+    print("="*60)
+    print("Environmental Data Verification API Server")
+    print("="*60)
+    print(f"Server would start on http://localhost:{port}")
+    print("Available endpoints:")
+    print("  GET  /                     - API documentation")
+    print("  GET  /health               - Health check")
+    print("  POST /auth/register        - User registration")
+    print("  POST /auth/set-password    - Set password for OAuth users")
+    print("  POST /auth/login           - User login")
+    print("  POST /auth/refresh         - Refresh access token")
+    print("  POST /auth/logout          - User logout")
+    print("  POST /auth/send-verification - Send email verification")
+    print("  POST /auth/verify-email    - Verify email with token")
+    print("  POST /auth/forgot-password - Request password reset")
+    print("  POST /auth/reset-password  - Reset password with token")
+    print("  POST /auth/change-password - Change password (authenticated)")
+    print("  GET  /user/profile         - Get user profile (authenticated)")
+    print("  PUT  /user/profile         - Update user profile (authenticated)")
+    print("  POST /user/avatar          - Upload user avatar (authenticated)")
+    print("  GET  /user/api-keys        - Get API keys (authenticated)")
+    print("  POST /user/api-keys        - Create API key (authenticated)")
+    print("  DELETE /user/api-keys/{id} - Delete API key (authenticated)")
+    print("  GET  /user/sessions        - Get user sessions (authenticated)")
+    print("  DELETE /user/sessions/{id} - Delete user session (authenticated)")
+    print("  POST /auth/2fa/setup       - Setup 2FA (authenticated)")
+    print("  POST /auth/2fa/verify      - Verify 2FA (authenticated)")
+    print("  POST /auth/2fa/disable     - Disable 2FA (authenticated)")
+    print("  GET  /permits              - Get all permits")
+    print("  GET  /permits/search       - Search permits")
+    print("  GET  /permits/active       - Get active permits")
+    print("  GET  /permits/company/<name> - Get permits by company")
+    print("  GET  /permits/type/<type>  - Get permits by type")
+    print("  GET  /permits/stats        - Get permit statistics")
+    print("="*60)
+    
+    yield
+    
+    # Shutdown code (if needed)
+    pass
 
 app = FastAPI(
     title="Environmental Data Verification API",
@@ -18,7 +67,8 @@ app = FastAPI(
             "name": "API Support",
             "email": "support@envoyou.com"
     },
-    terms_of_service="https://j8w3vpxvpb.ap-southeast-2.awsapprunner.com/terms"
+    terms_of_service="https://j8w3vpxvpb.ap-southeast-2.awsapprunner.com/terms",
+    lifespan=lifespan
 )
 
 # Ensure uploads directory exists
@@ -236,46 +286,3 @@ async def internal_error(request: Request, exc):
         'message': 'Internal server error'
         }
     )
-
-@app.on_event("startup")
-async def print_startup_info():
-    # Create database tables
-    from app.models.database import create_tables
-    create_tables()
-    
-    port = settings.PORT # Use settings for port
-    print("="*60)
-    print("Environmental Data Verification API Server")
-    print("="*60)
-    print(f"Server would start on http://localhost:{port}")
-    print("Available endpoints:")
-    print("  GET  /                     - API documentation")
-    print("  GET  /health               - Health check")
-    print("  POST /auth/register        - User registration")
-    print("  POST /auth/set-password    - Set password for OAuth users")
-    print("  POST /auth/login           - User login")
-    print("  POST /auth/refresh         - Refresh access token")
-    print("  POST /auth/logout          - User logout")
-    print("  POST /auth/send-verification - Send email verification")
-    print("  POST /auth/verify-email    - Verify email with token")
-    print("  POST /auth/forgot-password - Request password reset")
-    print("  POST /auth/reset-password  - Reset password with token")
-    print("  POST /auth/change-password - Change password (authenticated)")
-    print("  GET  /user/profile         - Get user profile (authenticated)")
-    print("  PUT  /user/profile         - Update user profile (authenticated)")
-    print("  POST /user/avatar          - Upload user avatar (authenticated)")
-    print("  GET  /user/api-keys        - Get API keys (authenticated)")
-    print("  POST /user/api-keys        - Create API key (authenticated)")
-    print("  DELETE /user/api-keys/{id} - Delete API key (authenticated)")
-    print("  GET  /user/sessions        - Get user sessions (authenticated)")
-    print("  DELETE /user/sessions/{id} - Delete user session (authenticated)")
-    print("  POST /auth/2fa/setup       - Setup 2FA (authenticated)")
-    print("  POST /auth/2fa/verify      - Verify 2FA (authenticated)")
-    print("  POST /auth/2fa/disable     - Disable 2FA (authenticated)")
-    print("  GET  /permits              - Get all permits")
-    print("  GET  /permits/search       - Search permits")
-    print("  GET  /permits/active       - Get active permits")
-    print("  GET  /permits/company/<name> - Get permits by company")
-    print("  GET  /permits/type/<type>  - Get permits by type")
-    print("  GET  /permits/stats        - Get permit statistics")
-    print("="*60)

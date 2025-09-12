@@ -5,7 +5,7 @@ from pydantic import BaseModel
 from typing import Optional
 import os
 import uuid
-from datetime import datetime
+from datetime import datetime, UTC
 
 from ..models.database import get_db
 from ..models.user import User
@@ -124,7 +124,7 @@ async def get_user_stats(current_user: User = Depends(get_current_user), db: Ses
     total_calls = sum(key.usage_count for key in api_keys)
 
     # Calculate monthly calls (last 30 days)
-    thirty_days_ago = datetime.utcnow() - timedelta(days=30)
+    thirty_days_ago = datetime.now(UTC) - timedelta(days=30)
     monthly_calls = 0
     # For now, we'll use total calls as monthly calls since we don't have detailed usage logs
     # In a real implementation, you'd have a usage_logs table to track this properly
@@ -307,7 +307,7 @@ async def get_user_sessions(
     """Get all active sessions for current user"""
     sessions = db.query(Session).filter(
         Session.user_id == current_user.id,
-        Session.expires_at > datetime.utcnow()
+        Session.expires_at > datetime.now(UTC)
     ).order_by(Session.last_active.desc()).all()
     
     session_responses = []
