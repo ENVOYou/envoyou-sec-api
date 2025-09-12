@@ -91,7 +91,7 @@ logger = logging.getLogger(__name__)
 async def api_key_dependency(request: Request):
     public_paths = [
         "/health", "/", "/docs", "/openapi.json", "/redoc",
-        "/auth/register", "/auth/login", "/auth/refresh", "/auth/logout",
+        "/auth/register", "/auth/set-password", "/auth/login", "/auth/refresh", "/auth/logout",
         "/auth/send-verification", "/auth/verify-email", "/auth/forgot-password", "/auth/reset-password",
         "/auth/2fa/setup", "/auth/2fa/verify", "/auth/2fa/disable",
         "/auth/google/login", "/auth/google/callback",
@@ -252,6 +252,7 @@ async def print_startup_info():
     print("  GET  /                     - API documentation")
     print("  GET  /health               - Health check")
     print("  POST /auth/register        - User registration")
+    print("  POST /auth/set-password    - Set password for OAuth users")
     print("  POST /auth/login           - User login")
     print("  POST /auth/refresh         - Refresh access token")
     print("  POST /auth/logout          - User logout")
