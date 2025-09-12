@@ -235,3 +235,5 @@ ALTERNATIVE_DATA_SOURCE.md
 *.txt
 error*
 debug.log
+
+COPILOT_AGENT_GUIDE.md
