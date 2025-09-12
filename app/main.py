@@ -44,6 +44,8 @@ origins = [
     "http://127.0.0.1:5173",
     "http://localhost:3000",  # Alternative port
     "http://127.0.0.1:3000",
+    "https://app.envoyou.com",  # Production frontend
+    "https://envoyou.com",     # Production landing page (if needed)
 ]
 
 app.add_middleware(
