@@ -6,7 +6,7 @@ from pydantic import BaseModel, EmailStr
 from typing import Optional
 import re
 import os
-from datetime import datetime
+from datetime import datetime, UTC
 import secrets
 import httpx
 from ..models.database import get_db
@@ -784,7 +784,7 @@ async def get_current_user(
     try:
         session = db.query(Session).filter(
             Session.user_id == user.id,
-            Session.expires_at > datetime.utcnow()
+            Session.expires_at > datetime.now(UTC)
         ).order_by(Session.last_active.desc()).first()
         
         if session:

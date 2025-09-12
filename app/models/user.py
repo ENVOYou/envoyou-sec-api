@@ -1,9 +1,8 @@
 from sqlalchemy import Column, Integer, String, Boolean, DateTime, func
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import declarative_base, relationship
 from passlib.context import CryptContext
 import uuid
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, UTC
 
 Base = declarative_base()
 
@@ -51,18 +50,18 @@ class User(Base):
     def generate_verification_token(self):
         """Generate email verification token"""
         self.email_verification_token = str(uuid.uuid4())
-        self.email_verification_expires = datetime.utcnow() + timedelta(hours=24)
+        self.email_verification_expires = datetime.now(UTC) + timedelta(hours=24)
     
     def generate_reset_token(self):
         """Generate password reset token"""
         self.password_reset_token = str(uuid.uuid4())
-        self.password_reset_expires = datetime.utcnow() + timedelta(hours=1)
+        self.password_reset_expires = datetime.now(UTC) + timedelta(hours=1)
     
     def verify_verification_token(self, token: str) -> bool:
         """Verify email verification token"""
         if (self.email_verification_token == token and 
             self.email_verification_expires and 
-            datetime.utcnow() < self.email_verification_expires):
+            datetime.now(UTC) < self.email_verification_expires):
             self.email_verified = True
             self.email_verification_token = None
             self.email_verification_expires = None
@@ -73,7 +72,7 @@ class User(Base):
         """Verify password reset token"""
         if (self.password_reset_token == token and 
             self.password_reset_expires and 
-            datetime.utcnow() < self.password_reset_expires):
+            datetime.now(UTC) < self.password_reset_expires):
             self.password_reset_token = None
             self.password_reset_expires = None
             return True
@@ -81,7 +80,7 @@ class User(Base):
     
     def update_last_login(self):
         """Update last login timestamp"""
-        self.last_login = datetime.utcnow()
+        self.last_login = datetime.now(UTC)
     
     def setup_2fa(self, secret: str):
         """Setup 2FA with secret"""

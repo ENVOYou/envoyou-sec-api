@@ -1,10 +1,9 @@
 from sqlalchemy import Column, Integer, String, DateTime, Boolean, ForeignKey, func, Text
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import declarative_base, relationship
 import uuid
 import hashlib
 import json
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, UTC
 
 # Use the same Base as User model
 from .user import Base
@@ -34,15 +33,15 @@ class Session(Base):
         self.token_hash = hashlib.sha256(token.encode()).hexdigest()
         
         # Set expiration (30 days from now)
-        self.expires_at = datetime.utcnow() + timedelta(days=30)
+        self.expires_at = datetime.now(UTC) + timedelta(days=30)
     
     def update_activity(self):
         """Update last active timestamp"""
-        self.last_active = datetime.utcnow()
+        self.last_active = datetime.now(UTC)
     
     def is_expired(self) -> bool:
         """Check if session is expired"""
-        return datetime.utcnow() > self.expires_at
+        return datetime.now(UTC) > self.expires_at
     
     def verify_token(self, token: str) -> bool:
         """Verify if provided token matches this session"""

@@ -2,7 +2,7 @@
 Pydantic models for standardized data from external APIs.
 """
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from typing import List
 
 class AirQualityCategory(BaseModel):
@@ -15,6 +15,4 @@ class AirQualityData(BaseModel):
     aqi: int = Field(..., alias="AQI", description="The Air Quality Index value.")
     category: AirQualityCategory = Field(..., alias="Category", description="The AQI category.")
 
-    class Config:
-        # Allows mapping from API's PascalCase to our snake_case if we chose to use it
-        populate_by_name = True
+    model_config = ConfigDict(populate_by_name=True)

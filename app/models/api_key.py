@@ -1,9 +1,9 @@
 from sqlalchemy import Column, Integer, String, DateTime, Boolean, ForeignKey, func, Text
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import declarative_base, relationship
 import uuid
 import secrets
 import hashlib
+from datetime import datetime, UTC
 
 # Use the same Base as User model
 from .user import Base
@@ -67,7 +67,7 @@ class APIKey(Base):
     def update_usage(self):
         """Update last used timestamp and increment usage count"""
         from datetime import datetime
-        self.last_used = datetime.utcnow()
+        self.last_used = datetime.now(UTC)
         self.usage_count += 1
     
     def to_dict(self):
