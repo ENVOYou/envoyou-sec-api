@@ -111,10 +111,36 @@ async def register(user_data: UserRegister, db: Session = Depends(get_db)):
         existing_user = db.query(User).filter(User.email == user_data.email).first()
         if existing_user:
             print(f"Email already registered: {user_data.email}")
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Email already registered"
-            )
+            
+            # If user exists and has OAuth provider but no password, allow setting password
+            if existing_user.auth_provider and not existing_user.password_hash:
+                print(f"OAuth user found, setting password for: {user_data.email}")
+                
+                # Validate password
+                if not validate_password(user_data.password):
+                    print(f"Invalid password for OAuth user: {user_data.email}")
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail="Password must be at least 8 characters with uppercase, lowercase, and number"
+                    )
+                
+                # Set password for existing OAuth user
+                existing_user.set_password(user_data.password)
+                existing_user.email_verified = True  # Mark as verified since they completed registration
+                db.commit()
+                
+                print(f"Password set successfully for OAuth user: {user_data.email}")
+                return RegistrationResponse(
+                    success=True,
+                    message="Password set successfully! You can now log in with your email and password.",
+                    email_sent=False  # No email needed since they already verified via OAuth
+                )
+            else:
+                # Regular duplicate email error
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Email already registered"
+                )
 
         # Validate password
         if not validate_password(user_data.password):
@@ -173,6 +199,64 @@ async def register(user_data: UserRegister, db: Session = Depends(get_db)):
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="An unexpected error occurred during registration. Please try again."
+        )
+
+# Pydantic models for password operations
+class SetPasswordRequest(BaseModel):
+    email: EmailStr
+    password: str
+
+class SetPasswordResponse(BaseModel):
+    success: bool
+    message: str
+
+@router.post("/set-password", response_model=SetPasswordResponse)
+async def set_password_for_oauth_user(request_data: SetPasswordRequest, db: Session = Depends(get_db)):
+    """Set password for existing OAuth user who wants to enable password login"""
+    try:
+        print(f"Set password request for email: {request_data.email}")
+
+        # Find user by email
+        user = db.query(User).filter(User.email == request_data.email).first()
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User not found"
+            )
+
+        # Check if user has OAuth provider
+        if not user.auth_provider:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="This account was not created with social login. Use password reset instead."
+            )
+
+        # Validate password
+        if not validate_password(request_data.password):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Password must be at least 8 characters with uppercase, lowercase, and number"
+            )
+
+        # Set password
+        user.set_password(request_data.password)
+        user.email_verified = True  # Ensure email is marked as verified
+        db.commit()
+
+        print(f"Password set successfully for OAuth user: {request_data.email}")
+        return SetPasswordResponse(
+            success=True,
+            message="Password set successfully! You can now log in with your email and password."
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error setting password for {request_data.email}: {str(e)}")
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to set password. Please try again."
         )
 
 @router.post("/login", response_model=TokenResponse)
