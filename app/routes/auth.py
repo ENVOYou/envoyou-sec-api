@@ -93,9 +93,12 @@ class RegistrationResponse(BaseModel):
 async def register(user_data: UserRegister, db: Session = Depends(get_db)):
     """Register a new user"""
     try:
+        print(f"Registration attempt for email: {user_data.email}")
+
         # Check if database is available - fix SQLAlchemy text usage
         from sqlalchemy import text
         db.execute(text("SELECT 1"))
+        print("Database connection OK")
     except Exception as db_error:
         print(f"Database connection error: {db_error}")
         raise HTTPException(
@@ -103,55 +106,74 @@ async def register(user_data: UserRegister, db: Session = Depends(get_db)):
             detail="Registration service temporarily unavailable. Please try again later."
         )
 
-    # Check if user already exists
-    existing_user = db.query(User).filter(User.email == user_data.email).first()
-    if existing_user:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Email already registered"
-        )
-    
-    # Validate password
-    if not validate_password(user_data.password):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Password must be at least 8 characters with uppercase, lowercase, and number"
-        )
-    
-    # Create new user
-    user = User(
-        email=user_data.email,
-        name=user_data.name,
-        company=user_data.company,
-        job_title=user_data.job_title
-    )
-    user.set_password(user_data.password)
-    
-    # Generate verification token
-    user.generate_verification_token()
-    
-    db.add(user)
-    db.commit()
-    db.refresh(user)
-    
-    # Send verification email instead of welcome email
-    email_sent = False
     try:
-        email_result = email_service.send_verification_email(user.email, user.email_verification_token)
-        if email_result:
-            print(f"Verification email sent successfully to {user.email}")
-            email_sent = True
-        else:
-            print(f"Failed to send verification email to {user.email}")
+        # Check if user already exists
+        existing_user = db.query(User).filter(User.email == user_data.email).first()
+        if existing_user:
+            print(f"Email already registered: {user_data.email}")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Email already registered"
+            )
+
+        # Validate password
+        if not validate_password(user_data.password):
+            print(f"Invalid password for email: {user_data.email}")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Password must be at least 8 characters with uppercase, lowercase, and number"
+            )
+
+        print(f"Creating user for email: {user_data.email}")
+
+        # Create new user
+        user = User(
+            email=user_data.email,
+            name=user_data.name,
+            company=user_data.company,
+            job_title=user_data.job_title
+        )
+        user.set_password(user_data.password)
+
+        # Generate verification token
+        user.generate_verification_token()
+
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+
+        print(f"User created successfully: {user.email}")
+
+        # Send verification email instead of welcome email
+        email_sent = False
+        try:
+            email_result = email_service.send_verification_email(user.email, user.email_verification_token)
+            if email_result:
+                print(f"Verification email sent successfully to {user.email}")
+                email_sent = True
+            else:
+                print(f"Failed to send verification email to {user.email}")
+        except Exception as e:
+            # Don't fail registration if email fails
+            print(f"Verification email error: {e}")
+
+        print(f"Registration completed for: {user.email}")
+        return RegistrationResponse(
+            success=True,
+            message="Registration successful. Please check your email to verify your account.",
+            email_sent=email_sent
+        )
+
+    except HTTPException:
+        # Re-raise HTTP exceptions as-is
+        raise
     except Exception as e:
-        # Don't fail registration if email fails
-        print(f"Verification email error: {e}")
-    
-    return RegistrationResponse(
-        success=True,
-        message="Registration successful. Please check your email to verify your account.",
-        email_sent=email_sent
-    )
+        print(f"Unexpected error during registration for {user_data.email}: {str(e)}")
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An unexpected error occurred during registration. Please try again."
+        )
 
 @router.post("/login", response_model=TokenResponse)
 async def login(
