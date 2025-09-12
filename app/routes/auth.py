@@ -92,6 +92,16 @@ class RegistrationResponse(BaseModel):
 @router.post("/register", response_model=RegistrationResponse)
 async def register(user_data: UserRegister, db: Session = Depends(get_db)):
     """Register a new user"""
+    try:
+        # Check if database is available
+        db.execute("SELECT 1")
+    except Exception as db_error:
+        print(f"Database connection error: {db_error}")
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Registration service temporarily unavailable. Please try again later."
+        )
+
     # Check if user already exists
     existing_user = db.query(User).filter(User.email == user_data.email).first()
     if existing_user:
