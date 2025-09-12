@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 from pydantic import BaseModel, EmailStr
 from typing import Optional
 import re
+import os
 from datetime import datetime
 import secrets
 import httpx
@@ -269,6 +270,7 @@ async def set_local_password(
     db: Session = Depends(get_db)
 ):
     """Set local password for authenticated OAuth user"""
+    current_user_email = None
     try:
         password = request_data.get("password")
         if not password:
@@ -278,8 +280,13 @@ async def set_local_password(
             )
 
         # Get current user from token
-        token_data = decode_access_token(credentials.credentials)
-        current_user_email = token_data.get("sub")
+        token_data = verify_token(credentials.credentials, "access")
+        if not token_data or not token_data.email:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid authentication token"
+            )
+        current_user_email = token_data.email
         
         user = db.query(User).filter(User.email == current_user_email).first()
         if not user:
@@ -319,7 +326,8 @@ async def set_local_password(
     except HTTPException:
         raise
     except Exception as e:
-        print(f"Error setting local password for {current_user_email}: {str(e)}")
+        user_email = current_user_email or "unknown"
+        print(f"Error setting local password for {user_email}: {str(e)}")
         db.rollback()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
