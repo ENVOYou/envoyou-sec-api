@@ -62,7 +62,7 @@ class EmailService:
     def send_password_reset_email(self, to_email: str, reset_token: str) -> bool:
         """Send password reset email"""
         subject = "Reset Your Password - Envoyou"
-        reset_url = f"https://api.envoyou.com/auth/reset-password?token={reset_token}"
+        reset_url = f"https://app.envoyou.com/auth/reset-password?token={reset_token}"
         
         html_content = f"""
         <html>

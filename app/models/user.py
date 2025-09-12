@@ -122,6 +122,7 @@ class User(Base):
             "email_verified": self.email_verified,
             "two_factor_enabled": self.two_factor_enabled,
             "auth_provider": self.auth_provider,
+            "has_local_password": self.password_hash is not None,
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "last_login": self.last_login.isoformat() if self.last_login else None
         }

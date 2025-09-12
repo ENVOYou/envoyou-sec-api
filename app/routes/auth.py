@@ -262,6 +262,70 @@ async def set_password_for_oauth_user(request_data: SetPasswordRequest, db: Sess
             detail="Failed to set password. Please try again."
         )
 
+@router.post("/set-local-password", response_model=MessageResponse)
+async def set_local_password(
+    request_data: dict,
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    db: Session = Depends(get_db)
+):
+    """Set local password for authenticated OAuth user"""
+    try:
+        password = request_data.get("password")
+        if not password:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Password is required"
+            )
+
+        # Get current user from token
+        token_data = decode_access_token(credentials.credentials)
+        current_user_email = token_data.get("sub")
+        
+        user = db.query(User).filter(User.email == current_user_email).first()
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User not found"
+            )
+
+        # Check if user already has a password
+        if user.password_hash:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="You already have a local password set. Use change password instead."
+            )
+
+        # Check if user has OAuth provider
+        if not user.auth_provider:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="This account already has a local password."
+            )
+
+        # Validate password
+        if not validate_password(password):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Password must be at least 8 characters with uppercase, lowercase, and number"
+            )
+
+        # Set password
+        user.set_password(password)
+        db.commit()
+
+        print(f"Local password set successfully for OAuth user: {current_user_email}")
+        return MessageResponse(message="Local password set successfully! You can now log in with your email and password.")
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error setting local password for {current_user_email}: {str(e)}")
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to set local password. Please try again."
+        )
+
 @router.post("/login", response_model=TokenResponse)
 async def login(
     user_data: UserLogin,
@@ -574,9 +638,16 @@ async def verify_email_get(token: str, db: Session = Depends(get_db)):
 
 # Password Management Endpoints
 @router.post("/forgot-password", response_model=MessageResponse)
-async def forgot_password(email_data: UserLogin, db: Session = Depends(get_db)):
+async def forgot_password(request: dict, db: Session = Depends(get_db)):
     """Send password reset email"""
-    user = db.query(User).filter(User.email == email_data.email).first()
+    email = request.get("email")
+    if not email:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Email is required"
+        )
+    
+    user = db.query(User).filter(User.email == email).first()
     if not user:
         # Don't reveal if email exists or not for security
         return MessageResponse(message="If the email exists, a reset link has been sent")
