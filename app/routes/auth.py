@@ -111,6 +111,8 @@ async def register(user_data: UserRegister, db: Session = Depends(get_db)):
         existing_user = db.query(User).filter(User.email == user_data.email).first()
         if existing_user:
             print(f"Email already registered: {user_data.email}")
+            print(f"User auth_provider: {existing_user.auth_provider}")
+            print(f"User has password_hash: {existing_user.password_hash is not None}")
             
             # If user exists and has OAuth provider but no password, allow setting password
             if existing_user.auth_provider and not existing_user.password_hash:
@@ -137,6 +139,7 @@ async def register(user_data: UserRegister, db: Session = Depends(get_db)):
                 )
             else:
                 # Regular duplicate email error
+                print(f"Regular duplicate email for: {user_data.email}")
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail="Email already registered"
