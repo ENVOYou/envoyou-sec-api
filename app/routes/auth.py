@@ -93,8 +93,9 @@ class RegistrationResponse(BaseModel):
 async def register(user_data: UserRegister, db: Session = Depends(get_db)):
     """Register a new user"""
     try:
-        # Check if database is available
-        db.execute("SELECT 1")
+        # Check if database is available - fix SQLAlchemy text usage
+        from sqlalchemy import text
+        db.execute(text("SELECT 1"))
     except Exception as db_error:
         print(f"Database connection error: {db_error}")
         raise HTTPException(
