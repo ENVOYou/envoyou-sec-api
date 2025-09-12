@@ -3,6 +3,6 @@
     "builder": "NIXPACKS"
   },
   "deploy": {
-    "startCommand": "sh -c 'FASTAPI_ENV=production uvicorn app.main:app --host 0.0.0.0 --port $PORT --workers 1'"
+    "startCommand": "sh -c 'FASTAPI_ENV=production uvicorn app.main:app --host 0.0.0.0 --port $PORT --workers 1 --log-level info'"
   }
 }
