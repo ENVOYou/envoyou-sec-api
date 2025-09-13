@@ -16,7 +16,7 @@
 - **FastAPI**: Asynchronous Python web framework for high performance.
 - **Pydantic**: Data validation and serialization.
 - **Docker**: Containerization for deployment.
-- **AWS App Runner**: Cloud deployment platform.
+- **Railway**: Cloud deployment platform. # migrasi to AWS future.
 - **Pandas**: Data processing.
 - **Requests/httpx**: HTTP clients for external integrations.
 
@@ -480,7 +480,7 @@ pytest --cov=app tests/
 
 ### ✅ Production Readiness
 - **Docker Deployment**: Multi-stage Dockerfile with security optimizations
-- **AWS App Runner**: Cloud-native deployment configuration
+- **Railway**: Cloud-native deployment configuration
 - **Comprehensive Testing**: Full test suite with pytest coverage
 - **Documentation**: Complete API documentation with examples
 
