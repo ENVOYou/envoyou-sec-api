@@ -1,4 +1,4 @@
--- Database Schema for EnvoyOU API
+-- Database Schema for Envoyou API
 -- Compatible with PostgreSQL and SQLite
 
 -- Users table

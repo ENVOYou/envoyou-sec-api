@@ -1,9 +1,9 @@
-# EnvoyOU API Documentation
+# Envoyou API Documentation
 
 ## Table of Contents
 
 - [Introduction](#introduction)
-  - [What is EnvoyOU, Purpose, Value](#what-is-envoyou-purpose-value)
+  - [What is Envoyou, Purpose, Value](#what-is-envoyou-purpose-value)
   - [Real Use Cases](#real-use-cases)
 - [Getting Started](#getting-started)
   - [How to Register, Login, Get API Key](#how-to-register-login-get-api-key)
@@ -34,9 +34,9 @@
 
 ## Introduction
 
-### What is EnvoyOU, Purpose, Value
+### What is Envoyou, Purpose, Value
 
-**EnvoyOU** is a sophisticated API platform for global environmental data aggregation that calculates the **Composite Environmental Verification Score (CEVS)** - a standard metric for corporate environmental performance.
+**Envoyou** is a sophisticated API platform for global environmental data aggregation that calculates the **Composite Environmental Verification Score (CEVS)** - a standard metric for corporate environmental performance.
 
 #### Vision
 To create a dynamic and real-time global environmental verification platform that provides not only static scores but also continuous updates based on the latest data. This enables benchmarking of company and sector performance, and supports global efforts towards sustainable development.
@@ -173,7 +173,7 @@ console.log(data);
 
 ### Authentication Scheme
 
-EnvoyOU uses a combination of JWT (JSON Web Token) and API Key for authentication:
+Envoyou uses a combination of JWT (JSON Web Token) and API Key for authentication:
 
 - **JWT**: For user authentication (login/register)
   - Access Token: Valid for 15 minutes
@@ -583,7 +583,7 @@ console.log(data);
 
 ### Authentication Scheme
 
-EnvoyOU uses a combination of JWT (JSON Web Token) and API Key for authentication:
+Envoyou uses a combination of JWT (JSON Web Token) and API Key for authentication:
 
 - **JWT**: For user authentication (login/register)
   - Access Token: Valid for 15 minutes
