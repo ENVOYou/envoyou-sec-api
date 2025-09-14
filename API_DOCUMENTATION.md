@@ -45,7 +45,7 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: 'http://localhost:8000',
+        target: 'http://localhost:10000',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api/, '')
       }
@@ -118,7 +118,7 @@ curl "http://localhost:8000/global/emissions?api_key=your_api_key_here"
 ---
 
 ## 🌐 Base URL
-- **Local**: `http://localhost:8000` 
+- **Local**: `http://localhost:10000` 
 
 ## 📡 API Endpoints
 
@@ -166,7 +166,7 @@ curl "http://localhost:8000/global/emissions?api_key=your_api_key_here"
 **Example Request:**
 ```bash
 curl -H "X-API-Key: demo_key_premium_2025" \
-  "http://localhost:8000/global/cevs/Green%20Energy%20Co?country=US"
+  "http://localhost:10000/global/cevs/Green%20Energy%20Co?country=US"
 ```
 
 #### Global Emissions Data (EPA)
@@ -186,7 +186,7 @@ curl -H "X-API-Key: demo_key_premium_2025" \
 **Example Request:**
 ```bash
 curl -H "X-API-Key: demo_key_basic_2025" \
-  "http://localhost:8000/global/emissions?state=CA&limit=5"
+  "http://localhost:10000/global/emissions?state=CA&limit=5"
 ```
 Response:"data": [ { "facility_name": "Example Power Plant", "state": "CA",
  "year": 2023,
@@ -272,6 +272,184 @@ curl -H "X-API-Key: demo_key_premium_2025" \
 - `country` (required): Country name (normalized automatically)
 - `pollutant` (optional): Pollutant type (default: "PM2.5")  
 - `window` (optional): Trend analysis window in years (default: 3)
+
+---
+
+### User Management
+
+All user endpoints require JWT authentication via Authorization header.
+
+**Authentication Header:**
+```Bash
+Authorization: Bearer your_jwt_token_here
+```
+
+#### Get User Profile
+
+**GET**
+```
+/user/profile  (Returns the authenticated user's profile information)
+```
+
+**Example Request:**
+```Bash
+curl -H "Authorization: Bearer your_jwt_token" \
+  "http://localhost:10000/user/profile"
+```
+
+**Example Response:**
+```json
+{
+  "id": "user_123",
+  "email": "user@example.com",
+  "name": "John Doe",
+  "company": "Acme Corp",
+  "job_title": "Environmental Analyst",
+  "avatar_url": null,
+  "timezone": "UTC",
+  "email_verified": true,
+  "two_factor_enabled": false,
+  "created_at": "2024-01-15T10:30:00Z",
+  "last_login": "2024-09-06T14:22:00Z"
+}
+```
+
+#### Get User Statistics
+
+**GET**
+```
+/user/stats  (Returns usage statistics for the authenticated user)
+```
+
+**Example Request:**
+```Bash
+curl -H "Authorization: Bearer your_jwt_token" \
+  "http://localhost:10000/user/stats"
+```
+
+#### Update User Profile
+
+**PUT**
+```
+/user/profile  (Updates the authenticated user's profile information)
+```
+
+**Example Request:**
+```Bash
+curl -X PUT "http://localhost:10000/user/profile" \
+  -H "Authorization: Bearer your_jwt_token" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Jane Doe",
+    "company": "GreenTech Solutions",
+    "job_title": "Sustainability Manager",
+    "timezone": "America/New_York"
+  }'
+```
+
+#### Upload User Avatar
+
+**POST**
+```
+/user/avatar  (Uploads a new avatar image for the authenticated user)
+```
+
+**Example Request:**
+```Bash
+curl -X POST "http://localhost:10000/user/avatar" \
+  -H "Authorization: Bearer your_jwt_token" \
+  -F "file=@avatar.jpg"
+```
+
+#### Get User Plan
+
+**GET**
+```
+/user/plan  (Returns the current user's subscription plan)
+```
+
+**Example Request:**
+```Bash
+curl -H "Authorization: Bearer your_jwt_token" \
+  "http://localhost:10000/user/plan"
+```
+
+**Example Response:**
+```json
+{
+  "plan": "FREE"
+}
+```
+
+#### List API Keys
+
+**GET**
+```
+/user/api-keys  (Returns all API keys for the authenticated user)
+```
+
+**Example Request:**
+```Bash
+curl -H "Authorization: Bearer your_jwt_token" \
+  "http://localhost:10000/user/api-keys"
+```
+
+#### Create API Key
+
+**POST**
+```
+/user/api-keys  (Creates a new API key for the authenticated user)
+```
+
+**Example Request:**
+```Bash
+curl -X POST "http://localhost:10000/user/api-keys" \
+  -H "Authorization: Bearer your_jwt_token" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "My API Key",
+    "permissions": ["read", "write"]
+  }'
+```
+
+#### Delete API Key
+
+**DELETE**
+```
+/user/api-keys/{key_id}  (Deletes a specific API key)
+```
+
+**Example Request:**
+```Bash
+curl -X DELETE "http://localhost:10000/user/api-keys/key_123" \
+  -H "Authorization: Bearer your_jwt_token"
+```
+
+#### List User Sessions
+
+**GET**
+```
+/user/sessions  (Returns all active sessions for the authenticated user)
+```
+
+**Example Request:**
+```Bash
+curl -H "Authorization: Bearer your_jwt_token" \
+  "http://localhost:10000/user/sessions"
+```
+
+#### Delete User Session
+
+**DELETE**
+```
+/user/sessions/{session_id}  (Terminates a specific user session)
+```
+
+**Example Request:**
+```Bash
+curl -X DELETE "http://localhost:10000/user/sessions/session_123" \
+  -H "Authorization: Bearer your_jwt_token"
+```
 
 ---
 
