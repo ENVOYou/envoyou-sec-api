@@ -30,6 +30,7 @@ class User(Base):
     two_factor_enabled = Column(Boolean, default=False)
     auth_provider = Column(String)  # 'google', 'github', etc.
     auth_provider_id = Column(String)  # ID from the OAuth provider
+    plan = Column(String, default="FREE")  # User plan: FREE, BUILD, ENTERPRISE
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
     

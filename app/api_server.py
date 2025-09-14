@@ -43,6 +43,7 @@ async def lifespan(app: FastAPI):
     print("  DELETE /user/api-keys/{id} - Delete API key (authenticated)")
     print("  GET  /user/sessions        - Get user sessions (authenticated)")
     print("  DELETE /user/sessions/{id} - Delete user session (authenticated)")
+    print("  GET  /user/plan            - Get user plan (authenticated)")
     print("  POST /auth/2fa/setup       - Setup 2FA (authenticated)")
     print("  POST /auth/2fa/verify      - Verify 2FA (authenticated)")
     print("  POST /auth/2fa/disable     - Disable 2FA (authenticated)")

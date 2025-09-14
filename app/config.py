@@ -39,19 +39,18 @@ class Settings(BaseSettings):
     LOG_FILE: Optional[str] = None
 
     #CORS Origins - Support multiple environment variable names for compatibility
-    CORS_ORIGINS: List[str] = ["*"]  # Legacy support
     ALLOWED_ORIGINS: Optional[str] = None  # New Railway variable
     CORS_ALLOWED_ORIGINS: Optional[str] = None  # Alternative Railway variable
 
     @property
     def cors_origins_list(self) -> List[str]:
-        """Get CORS origins with priority: CORS_ALLOWED_ORIGINS > ALLOWED_ORIGINS > CORS_ORIGINS"""
+        """Get CORS origins with priority: CORS_ALLOWED_ORIGINS > ALLOWED_ORIGINS"""
         if self.CORS_ALLOWED_ORIGINS:
             return [origin.strip() for origin in self.CORS_ALLOWED_ORIGINS.split(",")]
         elif self.ALLOWED_ORIGINS:
             return [origin.strip() for origin in self.ALLOWED_ORIGINS.split(",")]
         else:
-            return self.CORS_ORIGINS
+            return ["http://localhost:3000", "http://localhost:3001", "http://localhost:5173"]
 
     # Sumber Data ISO
     ISO_API_BASE: Optional[str] = None

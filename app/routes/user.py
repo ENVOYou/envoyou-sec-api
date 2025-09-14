@@ -346,3 +346,9 @@ async def delete_user_session(
     db.commit()
     
     return {"message": "Session deleted successfully"}
+
+# Plan endpoint
+@router.get("/plan")
+async def get_user_plan(current_user: User = Depends(get_current_user)):
+    """Get current user's plan"""
+    return {"plan": current_user.plan or "FREE"}
