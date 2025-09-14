@@ -826,7 +826,7 @@ async def setup_2fa(current_user: User = Depends(get_current_user), db: Session 
     # Generate QR code URL
     qr_code_url = totp.provisioning_uri(
         name=current_user.email,
-        issuer_name="EnvoyOU"
+        issuer_name="Envoyou"
     )
     
     # Store secret temporarily (don't enable yet)
