@@ -95,6 +95,7 @@ from app.routes.auth import router as auth_router
 from app.routes.user import router as user_router
 from app.routes.supabase_auth import router as supabase_auth_router
 from app.routes.cloudflare import router as cloudflare_router
+from app.routes.contact import router as contact_router
 
 # Import security utilities
 from app.utils.security import is_public_endpoint, validate_api_key, rate_limit_dependency_factory
