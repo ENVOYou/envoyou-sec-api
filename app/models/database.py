@@ -33,6 +33,7 @@ def create_tables():
     from .user import Base
     from .api_key import Base as APIKeyBase
     from .session import Base as SessionBase
+    from .notification import Base as NotificationBase
     
     # Create all tables using the same metadata
     Base.metadata.create_all(bind=engine)

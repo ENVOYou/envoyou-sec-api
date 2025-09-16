@@ -12,6 +12,7 @@ from ..models.user import User
 from ..models.api_key import APIKey
 from ..models.session import Session
 from ..utils.jwt import verify_token
+from ..services.redis_service import redis_service
 
 router = APIRouter()
 security = HTTPBearer()
@@ -105,8 +106,21 @@ async def get_current_user(
 
 @router.get("/profile", response_model=UserProfileResponse)
 async def get_user_profile(current_user: User = Depends(get_current_user)):
-    """Get current user profile"""
-    return UserProfileResponse(**current_user.to_dict())
+    """Get current user profile with Redis caching"""
+    user_id = current_user.id
+
+    # Try to get from cache first
+    cached_profile = redis_service.get_cached_user_profile(user_id)
+    if cached_profile:
+        return UserProfileResponse(**cached_profile)
+
+    # If not in cache, get from database
+    profile_data = current_user.to_dict()
+
+    # Cache the profile for 10 minutes (600 seconds)
+    redis_service.cache_user_profile(user_id, profile_data, ttl_seconds=600)
+
+    return UserProfileResponse(**profile_data)
 
 @router.get("/stats", response_model=UserStatsResponse)
 async def get_user_stats(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
@@ -170,7 +184,10 @@ async def update_user_profile(
     
     db.commit()
     db.refresh(current_user)
-    
+
+    # Invalidate cache after profile update
+    redis_service.invalidate_user_profile_cache(current_user.id)
+
     return UserProfileResponse(**current_user.to_dict())
 
 @router.post("/avatar")
