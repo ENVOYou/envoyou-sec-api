@@ -10,13 +10,14 @@ import logging
 from datetime import datetime
 from typing import Dict, Any, Optional, List
 from sqlalchemy.orm import Session
+import requests  # Import requests at module level
+import httpx  # For async HTTP requests
 
 try:
     import paddle_billing
     PADDLE_SDK_AVAILABLE = True
 except ImportError:
     PADDLE_SDK_AVAILABLE = False
-    import requests
 
 from ..config import settings
 from ..models.user import User
@@ -423,5 +424,4 @@ class PaddleService:
 
         except Exception as e:
             logger.error(f"Error getting customer subscriptions: {str(e)}")
-            return []</content>
-<parameter name="filePath">/home/husni/PROJECT-ENVOYOU-API/api-envoyou/app/services/paddle_service.py
+            return []
