@@ -120,6 +120,10 @@ app.add_middleware(GZipMiddleware, minimum_size=1000) # Keep this as is
 # Security middleware for XSS, CSRF, and input sanitization
 app.add_middleware(SecurityMiddleware)
 
+# Rate limiting middleware
+from app.middleware.rate_limit import RateLimitMiddleware
+app.add_middleware(RateLimitMiddleware)
+
 # Logging
 log_level = getattr(logging, settings.LOG_LEVEL.upper(), logging.INFO) # Use settings.LOG_LEVEL
 log_handlers = []

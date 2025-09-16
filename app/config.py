@@ -126,6 +126,15 @@ class Settings(BaseSettings):
     PADDLE_PRODUCT_ID: Optional[str] = None  # Product ID for subscriptions
     PADDLE_PRICE_ID: Optional[str] = None    # Price ID for billing
 
+    # Redis Configuration (Upstash)
+    REDIS_URL: Optional[str] = None
+    UPSTASH_REDIS_URL: Optional[str] = None  # Alternative name
+
+    @property
+    def redis_url(self) -> Optional[str]:
+        """Get Redis URL with priority: REDIS_URL > UPSTASH_REDIS_URL"""
+        return self.REDIS_URL or self.UPSTASH_REDIS_URL
+
     @property
     def paddle_api_base_url(self) -> str:
         """Get Paddle API base URL based on environment"""

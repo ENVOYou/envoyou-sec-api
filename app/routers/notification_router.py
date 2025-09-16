@@ -16,6 +16,7 @@ from app.models.notification import (
     NotificationPriority,
     NotificationCategory
 )
+from app.services.redis_service import redis_service
 
 
 router = APIRouter(prefix="/api/notifications", tags=["notifications"])
@@ -125,12 +126,15 @@ async def create_notification(
                 notification.category.value
             )
 
+        # Invalidate user notification cache
+        redis_service.invalidate_user_notifications_cache(notification.user_id)
+
         return db_notification.to_dict()
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to create notification: {str(e)}")
 
 
-@router.get("/", response_model=List[NotificationResponse])
+@router.get("/")
 async def get_user_notifications(
     user_id: str = Query(..., description="User ID"),
     limit: int = Query(50, description="Maximum number of notifications to return"),
@@ -139,7 +143,16 @@ async def get_user_notifications(
     category: Optional[NotificationCategory] = Query(None, description="Filter by category"),
     repo: NotificationRepository = Depends(get_notification_repository)
 ):
-    """Get notifications for a user"""
+    """Get notifications for a user with Redis caching"""
+    # Create cache key based on parameters
+    cache_key = f"notifications:{user_id}:{limit}:{offset}:{unread_only}:{category}"
+
+    # Try to get from cache first (cache for 5 minutes)
+    cached_notifications = redis_service.get_cache(cache_key)
+    if cached_notifications is not None:
+        return cached_notifications
+
+    # If not in cache, get from database
     try:
         notifications = repo.get_user_notifications(
             user_id=user_id,
@@ -148,7 +161,12 @@ async def get_user_notifications(
             unread_only=unread_only,
             category=category
         )
-        return [notification.to_dict() for notification in notifications]
+        notification_data = [notification.to_dict() for notification in notifications]
+
+        # Cache the result for 5 minutes
+        redis_service.set_cache(cache_key, notification_data, ttl_seconds=300)
+
+        return notification_data
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to get notifications: {str(e)}")
 
