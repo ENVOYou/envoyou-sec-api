@@ -119,6 +119,29 @@ class Settings(BaseSettings):
     SUPABASE_JWT_SECRET: Optional[str] = None
     ENABLE_SUPABASE_AUTH: bool = False
 
+    # Paddle Payment Configuration
+    PADDLE_API_KEY: Optional[str] = None
+    PADDLE_ENVIRONMENT: str = "sandbox"  # "sandbox" or "production"
+    PADDLE_WEBHOOK_SECRET: Optional[str] = None
+    PADDLE_PRODUCT_ID: Optional[str] = None  # Product ID for subscriptions
+    PADDLE_PRICE_ID: Optional[str] = None    # Price ID for billing
+
+    @property
+    def paddle_api_base_url(self) -> str:
+        """Get Paddle API base URL based on environment"""
+        if self.PADDLE_ENVIRONMENT == "production":
+            return "https://api.paddle.com"
+        else:
+            return "https://sandbox-api.paddle.com"
+
+    @property
+    def paddle_checkout_url(self) -> str:
+        """Get Paddle checkout URL based on environment"""
+        if self.PADDLE_ENVIRONMENT == "production":
+            return "https://checkout.paddle.com"
+        else:
+            return "https://sandbox-checkout.paddle.com"
+
     @model_validator(mode='after')
     def set_production_defaults(self) -> 'Settings':
         """Set production-specific defaults based on ENVIRONMENT"""
