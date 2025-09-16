@@ -184,20 +184,11 @@ class TaskProcessor:
         try:
             # Import here to avoid circular imports
             from app.services.paddle_service import PaddleService
-            from app.models.database import SessionLocal
 
-            db = SessionLocal()
-            try:
-                paddle_service = PaddleService(db)
-                success = await paddle_service.process_webhook(webhook_data)
+            paddle_service = PaddleService()
+            await paddle_service.process_queued_webhook(webhook_data)
 
-                if success:
-                    logger.info("✅ Paddle webhook processed successfully")
-                else:
-                    logger.error("❌ Failed to process Paddle webhook")
-
-            finally:
-                db.close()
+            logger.info("✅ Paddle webhook processed successfully")
 
         except Exception as e:
             logger.error(f"Error processing Paddle webhook: {e}")

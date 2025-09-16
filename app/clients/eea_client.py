@@ -6,7 +6,6 @@ from typing import Any, Dict, List, Optional
 import io
 import requests
 import pandas as pd
-from functools import lru_cache
 
 from app.utils.mappings import normalize_country_name
 
@@ -14,6 +13,61 @@ from app.utils.mappings import normalize_country_name
 # pip install pyarrow
 
 logger = logging.getLogger(__name__)
+
+class RedisCache:
+    """Redis-based cache for EEA data"""
+
+    def __init__(self, default_ttl: int = 86400):  # 24 hours default
+        self.default_ttl = default_ttl
+        self._redis_service = None
+
+    async def _get_redis_service(self):
+        """Lazy load Redis service to avoid circular imports"""
+        if self._redis_service is None:
+            try:
+                from app.services.redis_service import redis_service
+                self._redis_service = redis_service
+            except ImportError:
+                logger.warning("Redis service not available, falling back to in-memory cache")
+                self._redis_service = None
+        return self._redis_service
+
+    def _generate_cache_key(self, dataset_id: str) -> str:
+        """Generate cache key for dataset"""
+        return f"eea:{dataset_id}"
+
+    async def get(self, cache_key: str) -> Any | None:
+        """Get cached data"""
+        redis_service = await self._get_redis_service()
+        if redis_service:
+            return await redis_service.get_cache(cache_key)
+        return None
+
+    async def set(self, cache_key: str, value: Any, ttl: Optional[int] = None) -> None:
+        """Set cached data"""
+        redis_service = await self._get_redis_service()
+        if redis_service:
+            await redis_service.set_cache(cache_key, value, ttl or self.default_ttl)
+
+    async def get_or_set(self, cache_key: str, fetch_func, ttl: Optional[int] = None):
+        """Get from cache or set if not exists"""
+        # Try to get from cache first
+        cached_data = await self.get(cache_key)
+        if cached_data is not None:
+            logger.debug(f"Cache hit for EEA key: {cache_key}")
+            return cached_data
+
+        # Fetch fresh data
+        logger.debug(f"Cache miss for EEA key: {cache_key}, fetching fresh data")
+        fresh_data = await fetch_func()
+
+        # Cache the fresh data
+        await self.set(cache_key, fresh_data, ttl)
+
+        return fresh_data
+
+# Global Redis cache instance for EEA
+eea_cache = RedisCache()
 
 class EEAClient:
     """
@@ -29,56 +83,65 @@ class EEAClient:
             "User-Agent": f"project-permit-api/1.0 (+{os.getenv('GITHUB_REPO_URL', 'https://github.com/hk-dev13')})"
         })
 
-    @lru_cache(maxsize=10) # Simple cache to avoid repeated downloads
-    def _get_parquet_data(self, dataset_id: str) -> List[Dict[str, Any]]:
+    async def _get_parquet_data(self, dataset_id: str) -> List[Dict[str, Any]]:
         """
-        Find, download, and parse Parquet dataset from EEA API.
+        Find, download, and parse Parquet dataset from EEA API with Redis caching.
         This implements a 2-step workflow:
         1. Get file metadata to find download URL.
         2. Download and read Parquet file.
         """
-        logger.info(f"Searching for file for EEA dataset: {dataset_id}")
-        files_url = f"{self.BASE_URL}/datasets/{dataset_id}/files"
+        cache_key = eea_cache._generate_cache_key(dataset_id)
 
+        async def fetch_fresh_data():
+            logger.info(f"Searching for file for EEA dataset: {dataset_id}")
+            files_url = f"{self.BASE_URL}/datasets/{dataset_id}/files"
+
+            try:
+                # Step 1: Get download URL
+                resp_files = self.session.get(files_url, timeout=30)
+                resp_files.raise_for_status()
+                files_metadata = resp_files.json()
+
+                # Find first available Parquet file
+                download_url = next((f['links']['download'] for f in files_metadata if f['name'].endswith('.parquet')), None)
+
+                if not download_url:
+                    logger.warning(f"No Parquet file found for dataset {dataset_id}, using fallback data")
+                    return self._get_fallback_data(dataset_id)
+
+                # Step 2: Download and read Parquet file
+                logger.info(f"Downloading Parquet data from: {download_url}")
+                resp_data = self.session.get(download_url, timeout=90) # Longer timeout for downloads
+                resp_data.raise_for_status()
+
+                # Use pandas to read binary content
+                df = pd.read_parquet(io.BytesIO(resp_data.content))
+
+                # Clean column names for consistency (optional but recommended)
+                df.columns = [col.strip().lower().replace(' ', '_') for col in df.columns]
+
+                return df.to_dict(orient="records")
+
+            except requests.exceptions.HTTPError as e:
+                if e.response.status_code == 404:
+                    logger.warning(f"Dataset {dataset_id} not found in EEA API, using fallback data")
+                    return self._get_fallback_data(dataset_id)
+                else:
+                    logger.error(f"HTTP error when retrieving EEA data for {dataset_id}: {e}")
+            except requests.exceptions.RequestException as e:
+                logger.error(f"Network error when retrieving EEA data for {dataset_id}: {e}")
+            except Exception as e:
+                logger.error(f"Error processing Parquet data for {dataset_id}: {e}")
+
+            # Fallback to static data if everything fails
+            return self._get_fallback_data(dataset_id)
+
+        # Use Redis cache with 24-hour TTL for EEA data
         try:
-            # Step 1: Get download URL
-            resp_files = self.session.get(files_url, timeout=30)
-            resp_files.raise_for_status()
-            files_metadata = resp_files.json()
-
-            # Find first available Parquet file
-            download_url = next((f['links']['download'] for f in files_metadata if f['name'].endswith('.parquet')), None)
-
-            if not download_url:
-                logger.warning(f"No Parquet file found for dataset {dataset_id}, using fallback data")
-                return self._get_fallback_data(dataset_id)
-
-            # Step 2: Download and read Parquet file
-            logger.info(f"Downloading Parquet data from: {download_url}")
-            resp_data = self.session.get(download_url, timeout=90) # Longer timeout for downloads
-            resp_data.raise_for_status()
-
-            # Use pandas to read binary content
-            df = pd.read_parquet(io.BytesIO(resp_data.content))
-
-            # Clean column names for consistency (optional but recommended)
-            df.columns = [col.strip().lower().replace(' ', '_') for col in df.columns]
-
-            return df.to_dict(orient="records")
-
-        except requests.exceptions.HTTPError as e:
-            if e.response.status_code == 404:
-                logger.warning(f"Dataset {dataset_id} not found in EEA API, using fallback data")
-                return self._get_fallback_data(dataset_id)
-            else:
-                logger.error(f"HTTP error when retrieving EEA data for {dataset_id}: {e}")
-        except requests.exceptions.RequestException as e:
-            logger.error(f"Network error when retrieving EEA data for {dataset_id}: {e}")
+            return await eea_cache.get_or_set(cache_key, fetch_fresh_data, ttl=86400)
         except Exception as e:
-            logger.error(f"Error processing Parquet data for {dataset_id}: {e}")
-
-        # Fallback to static data if everything fails
-        return self._get_fallback_data(dataset_id)
+            logger.warning(f"Redis cache failed for EEA, fetching directly: {e}")
+            return await fetch_fresh_data()
 
     def _get_fallback_data(self, dataset_id: str) -> List[Dict[str, Any]]:
         """
@@ -177,14 +240,14 @@ class EEAClient:
             logger.warning(f"No fallback data available for dataset: {dataset_id}")
             return []
 
-    def get_countries_renewables(self) -> List[Dict[str, Any]]:
+    async def get_countries_renewables(self) -> List[Dict[str, Any]]:
         """
         Retrieve and normalize renewable energy share data per country.
         """
         # This ID should be verified from API, this is an example
-        dataset_id = "share-of-energy-from-renewable-sources" 
-        raw_data = self._get_parquet_data(dataset_id)
-        
+        dataset_id = "share-of-energy-from-renewable-sources"
+        raw_data = await self._get_parquet_data(dataset_id)
+
         normalized_data = []
         for record in raw_data:
             # Columns are lowercased and underscored by _get_parquet_data
@@ -215,26 +278,26 @@ class EEAClient:
                 return record
         return None
 
-    def get_industrial_pollution(self) -> List[Dict[str, Any]]:
+    async def get_industrial_pollution(self) -> List[Dict[str, Any]]:
         """
         Retrieve and normalize industrial pollution trend data.
         """
         # This ID should be verified from API, this is an example
         dataset_id = "industrial-releases-of-pollutants-to-water"
-        raw_data = self._get_parquet_data(dataset_id)
-        
+        raw_data = await self._get_parquet_data(dataset_id)
+
         normalized_data = []
         for record in raw_data:
             year = record.get("year")
             if not year:
                 continue
-                
+
             def to_float(v):
                 try:
                     return float(v) if v not in (None, "") else None
                 except Exception:
                     return None
-                    
+
             normalized_data.append({
                 "year": int(year),
                 "cd_hg_ni_pb": to_float(record.get("cd_hg_ni_pb")),
@@ -243,7 +306,7 @@ class EEAClient:
                 "total_p": to_float(record.get("total_p")),
                 "gva": to_float(record.get("gva")),
             })
-        
+
         # Sort by year
         normalized_data.sort(key=lambda x: x.get("year", 0))
         return normalized_data
@@ -265,7 +328,7 @@ class EEAClient:
             "total_p": slope_for("total_p")
         }
 
-    def get_indicator(self, *, indicator: Optional[str] = "GHG", country: Optional[str] = None, 
+    async def get_indicator(self, *, indicator: Optional[str] = "GHG", country: Optional[str] = None,
                      year: Optional[int] = None, limit: int = 50) -> List[Dict[str, Any]]:
         """
         Generic indicator method for backward compatibility.
@@ -274,34 +337,34 @@ class EEAClient:
         try:
             if not indicator:
                 indicator = "GHG"
-                
+
             indicator_lower = indicator.lower()
-            
+
             # Route renewable energy indicators
             if "renewable" in indicator_lower or indicator_lower in ["res", "share_res"]:
                 if country:
-                    result = self.get_country_renewables(country)
+                    result = await self.get_country_renewables(country)
                     return [result] if result else []
                 else:
-                    results = self.get_countries_renewables()
+                    results = await self.get_countries_renewables()
                     return results[:limit] if results else []
             
-            # Route GHG/pollution indicators  
+            # Route GHG/pollution indicators
             elif indicator_lower in ["ghg", "greenhouse", "pollution", "emissions"]:
-                results = self.get_industrial_pollution()
-                
+                results = await self.get_industrial_pollution()
+
                 # Apply country filter if specified
                 if country:
                     normalized_country = normalize_country_name(country)
-                    results = [r for r in results 
+                    results = [r for r in results
                              if normalize_country_name(r.get('country', '')) == normalized_country or
                                 normalize_country_name(r.get('countryName', '')) == normalized_country]
-                
-                # Apply year filter if specified  
+
+                # Apply year filter if specified
                 if year:
-                    results = [r for r in results 
+                    results = [r for r in results
                              if r.get('year') == year or r.get('reportingYear') == year]
-                
+
                 return results[:limit] if results else []
             
             # Default fallback - return renewable energy data
