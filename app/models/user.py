@@ -31,6 +31,7 @@ class User(Base):
     auth_provider = Column(String)  # 'google', 'github', etc.
     auth_provider_id = Column(String)  # ID from the OAuth provider
     plan = Column(String, default="FREE")  # User plan: FREE, BUILD, ENTERPRISE
+    paddle_customer_id = Column(String, nullable=True)  # Paddle customer ID for payments
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
     

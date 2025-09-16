@@ -70,6 +70,7 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 # Import and include routers
 from app.routes import admin, auth, global_data, health, permits, external, supabase_auth
 from app.routes.user import router as user_router
+from app.routes.payments import router as payments_router
 from app.routers.notification_router import router as notification_router
 
 app.include_router(admin.router, prefix="/v1/admin")
@@ -81,6 +82,7 @@ app.include_router(external.router, prefix="/v1/external")
 app.include_router(supabase_auth.router, prefix="/v1/auth")
 app.include_router(user_router, prefix="/v1/user")
 app.include_router(notification_router, prefix="/v1/notifications")
+app.include_router(payments_router, prefix="/v1/payments")
 
 @app.get("/")
 async def root():
