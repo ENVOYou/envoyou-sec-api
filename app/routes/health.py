@@ -5,6 +5,7 @@ import sys
 from datetime import datetime, timezone
 from app.utils import cache as cache_util
 from app.utils.redis_utils import redis_health_check
+from app.services.redis_metrics import redis_metrics
 
 router = APIRouter()
 
@@ -103,3 +104,42 @@ async def test_email(email: str):
             
     except Exception as e:
         return {"status": "error", "message": str(e)}  # Re-raise to let Sentry capture it
+
+@router.get("/redis", tags=["Health"], summary="Redis Metrics and Health")
+async def redis_metrics_check():
+    """
+    Comprehensive Redis metrics and health check.
+    Returns detailed Redis performance and status information.
+    """
+    try:
+        # Collect current metrics
+        metrics = await redis_metrics.collect_metrics()
+
+        # Get health status
+        health = await redis_metrics.get_health_status()
+
+        # Get recent alerts
+        alerts = await redis_metrics.get_alerts(hours=1)
+
+        return JSONResponse(
+            status_code=200,
+            content={
+                "status": "success",
+                "data": {
+                    "health": health,
+                    "metrics": metrics,
+                    "alerts": alerts,
+                    "timestamp": datetime.now(timezone.utc).isoformat()
+                }
+            }
+        )
+
+    except Exception as e:
+        return JSONResponse(
+            status_code=500,
+            content={
+                "status": "error",
+                "message": f"Redis metrics check failed: {str(e)}",
+                "timestamp": datetime.now(timezone.utc).isoformat()
+            }
+        )

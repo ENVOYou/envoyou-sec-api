@@ -68,57 +68,33 @@ async def create_subscription(
     Create a new subscription for the current user
     """
     try:
-        import requests
+        from ..services.paddle_service import PaddleService
 
-        # Prepare subscription data
-        subscription_data = {
-            "items": [
-                {
-                    "price_id": request.price_id,
-                    "quantity": 1
-                }
-            ],
-            "customer_id": current_user.paddle_customer_id or await _create_paddle_customer(current_user),
-            "custom_data": {
+        paddle_service = PaddleService()
+
+        # Ensure user has Paddle customer ID
+        if not current_user.paddle_customer_id:
+            current_user.paddle_customer_id = await _create_paddle_customer(current_user)
+            db.commit()
+
+        # Create subscription using Paddle service
+        subscription = await paddle_service.create_subscription(
+            user_id=current_user.id,
+            price_id=request.price_id,
+            custom_data={
                 "user_id": str(current_user.id),
                 **(request.custom_data or {})
             }
-        }
-
-        # Create subscription via Paddle API
-        headers = {
-            "Authorization": f"Bearer {settings.PADDLE_API_KEY}",
-            "Content-Type": "application/json"
-        }
-
-        response = requests.post(
-            f"{settings.paddle_api_base_url}/subscriptions",
-            json=subscription_data,
-            headers=headers
         )
 
-        if response.status_code != 201:
-            logger.error(f"Paddle API error: {response.text}")
-            raise HTTPException(status_code=400, detail="Failed to create subscription")
-
-        subscription = response.json()
-
-        # Update user with Paddle customer ID if not set
-        if not current_user.paddle_customer_id:
-            current_user.paddle_customer_id = subscription["customer_id"]
-            db.commit()
-
         return SubscriptionResponse(
-            subscription_id=subscription["id"],
+            subscription_id=subscription["subscription_id"],
             status=subscription["status"],
             checkout_url=subscription.get("checkout_url"),
             customer_id=subscription["customer_id"],
-            product_id=subscription["items"][0]["product_id"],
-            price_id=subscription["items"][0]["price_id"],
-            currency=subscription["currency_code"],
-            unit_price=subscription["items"][0]["unit_price"],
-            quantity=subscription["items"][0]["quantity"],
-            next_billing_date=subscription.get("next_billed_at")
+            product_id=subscription["product_id"],
+            price_id=subscription["price_id"],
+            currency=subscription["currency"]
         )
 
     except Exception as e:
@@ -175,8 +151,12 @@ async def paddle_webhook(
         body = await request.body()
         signature = request.headers.get("Paddle-Signature")
 
-        # Verify webhook signature
-        if not _verify_webhook_signature(body, signature):
+        # Process webhook using Paddle service
+        from ..services.paddle_service import PaddleService
+        paddle_service = PaddleService()
+
+        # Verify signature using service method
+        if not paddle_service.verify_webhook_signature(body, signature):
             raise HTTPException(status_code=401, detail="Invalid signature")
 
         # Parse webhook data
@@ -185,8 +165,8 @@ async def paddle_webhook(
 
         logger.info(f"Received Paddle webhook: {event_type}")
 
-        # Process webhook in background
-        background_tasks.add_task(_process_webhook, webhook_data)
+        # Process webhook using Paddle service (queues to Redis)
+        await paddle_service.process_webhook(webhook_data)
 
         return {"status": "ok"}
 

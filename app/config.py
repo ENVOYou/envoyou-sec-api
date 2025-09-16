@@ -126,6 +126,9 @@ class Settings(BaseSettings):
     PADDLE_PRODUCT_ID: Optional[str] = None  # Product ID for subscriptions
     PADDLE_PRICE_ID: Optional[str] = None    # Price ID for billing
 
+    # Cloudflare Configuration
+    CLOUDFLARE_API_TOKEN: Optional[str] = None
+
     # Redis Configuration (Upstash)
     REDIS_URL: Optional[str] = None
     UPSTASH_REDIS_URL: Optional[str] = None  # Alternative name

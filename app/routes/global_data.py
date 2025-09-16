@@ -217,7 +217,7 @@ async def global_eea(
 ):
     try:
         client = EEAClient()
-        data = client.get_indicator(indicator=indicator, country=country, year=year, limit=limit)
+        data = await client.get_indicator(indicator=indicator, country=country, year=year, limit=limit)
         return JSONResponse(content={
             "status": "success",
             "data": data,

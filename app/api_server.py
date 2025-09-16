@@ -94,6 +94,7 @@ from app.routes.admin import router as admin_router
 from app.routes.auth import router as auth_router
 from app.routes.user import router as user_router
 from app.routes.supabase_auth import router as supabase_auth_router
+from app.routes.cloudflare import router as cloudflare_router
 
 # Import security utilities
 from app.utils.security import is_public_endpoint, validate_api_key, rate_limit_dependency_factory
@@ -230,6 +231,7 @@ app.include_router(admin_router, prefix="/admin")
 app.include_router(auth_router, prefix="/auth")
 app.include_router(supabase_auth_router, prefix="/auth")
 app.include_router(user_router, prefix="/user")
+app.include_router(cloudflare_router, prefix="/cloudflare")
 
 @app.get("/", tags=["Health"])
 async def home():
@@ -250,7 +252,11 @@ async def home():
             '/global/iso': 'ISO 14001 certifications (filters: country, limit)',
             '/global/eea': 'EEA indicators (filters: country, indicator, year, limit)',
             '/global/cevs/<company_name>': 'Compute CEVS score for a company (filters: country)',
-            '/global/edgar': 'EDGAR series+trend (params: country, pollutant=PM2.5, window=3)'
+            '/global/edgar': 'EDGAR series+trend (params: country, pollutant=PM2.5, window=3)',
+            '/cloudflare/zones': 'Get Cloudflare zones (admin only)',
+            '/cloudflare/dns': 'DNS record management (admin only)',
+            '/cloudflare/security': 'Security settings management (admin only)',
+            '/cloudflare/analytics': 'Zone analytics data (admin only)'
         },
         'usage_examples': {
             'get_all_permits': '/permits',
@@ -261,7 +267,11 @@ async def home():
             'epa_emissions': '/global/emissions?state=TX&year=2023&pollutant=CO2',
             'iso_cert': '/global/iso?country=DE&limit=5',
             'eea_indicator': '/global/eea?country=SE&indicator=GHG&year=2023&limit=5',
-            'cevs_company': '/global/cevs/Green%20Energy%20Co?country=US'
+            'cevs_company': '/global/cevs/Green%20Energy%20Co?country=US',
+            'cloudflare_zones': '/cloudflare/zones',
+            'cloudflare_dns': '/cloudflare/dns?zone_id=zone123',
+            'cloudflare_security': '/cloudflare/security?zone_id=zone123',
+            'cloudflare_analytics': '/cloudflare/analytics?zone_id=zone123&since=1h'
         }
     }
     return api_info
@@ -277,7 +287,8 @@ async def not_found(request: Request, exc):
                 '/', '/health', '/permits', '/permits/search', '/permits/active',
                 '/permits/company/<company_name>', '/permits/type/<permit_type>',
                 '/permits/stats', '/global/emissions', '/global/emissions/stats',
-                '/global/iso', '/global/eea', '/global/cevs/<company_name>', '/global/edgar'
+                '/global/iso', '/global/eea', '/global/cevs/<company_name>', '/global/edgar',
+                '/cloudflare/zones', '/cloudflare/dns', '/cloudflare/security', '/cloudflare/analytics'
             ]
         }
     )
