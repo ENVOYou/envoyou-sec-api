@@ -81,6 +81,10 @@ class Settings(BaseSettings):
     SENDGRID_API_KEY: Optional[str] = None
     EMAIL_OFFLINE_MODE: bool = False
 
+    # Application Domain and Support
+    APP_DOMAIN: str = "https://app.envoyou.com"
+    SUPPORT_EMAIL: str = "support@envoyou.com"
+
     # OAuth Configuration
     ENABLE_SOCIAL_AUTH: bool = True
     GOOGLE_CLIENT_ID: Optional[str] = None
@@ -125,6 +129,14 @@ class Settings(BaseSettings):
     PADDLE_WEBHOOK_SECRET: Optional[str] = None
     PADDLE_PRODUCT_ID: Optional[str] = None  # Product ID for subscriptions
     PADDLE_PRICE_ID: Optional[str] = None    # Price ID for billing
+
+    # Paddle Price IDs for different plans
+    PADDLE_PRICE_ID_BASIC: Optional[str] = None
+    PADDLE_PRICE_ID_PREMIUM_MONTHLY: Optional[str] = None
+    PADDLE_PRICE_ID_PREMIUM_ANNUAL: Optional[str] = None
+    PADDLE_PRICE_ID_ENTERPRISE_SMALL: Optional[str] = None
+    PADDLE_PRICE_ID_ENTERPRISE_MEDIUM: Optional[str] = None
+    PADDLE_PRICE_ID_ENTERPRISE_LARGE: Optional[str] = None
 
     # Cloudflare Configuration
     CLOUDFLARE_API_TOKEN: Optional[str] = None
