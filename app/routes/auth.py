@@ -92,118 +92,11 @@ class RegistrationResponse(BaseModel):
 
 @router.post("/register", response_model=RegistrationResponse)
 async def register(user_data: UserRegister, db: Session = Depends(get_db)):
-    """Register a new user"""
-    try:
-        print(f"Registration attempt for email: {user_data.email}")
-
-        # Check if database is available - fix SQLAlchemy text usage
-        from sqlalchemy import text
-        db.execute(text("SELECT 1"))
-        print("Database connection OK")
-    except Exception as db_error:
-        print(f"Database connection error: {db_error}")
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Registration service temporarily unavailable. Please try again later."
-        )
-
-    try:
-        # Check if user already exists
-        existing_user = db.query(User).filter(User.email == user_data.email).first()
-        if existing_user:
-            print(f"Email already registered: {user_data.email}")
-            print(f"User auth_provider: {existing_user.auth_provider}")
-            print(f"User has password_hash: {existing_user.password_hash is not None}")
-            
-            # If user exists and has OAuth provider but no password, allow setting password
-            if existing_user.auth_provider and not existing_user.password_hash:
-                print(f"OAuth user found, setting password for: {user_data.email}")
-                
-                # Validate password
-                if not validate_password(user_data.password):
-                    print(f"Invalid password for OAuth user: {user_data.email}")
-                    raise HTTPException(
-                        status_code=status.HTTP_400_BAD_REQUEST,
-                        detail="Password must be at least 8 characters with uppercase, lowercase, and number"
-                    )
-                
-                # Set password for existing OAuth user
-                existing_user.set_password(user_data.password)
-                existing_user.email_verified = True  # Mark as verified since they completed registration
-                db.commit()
-                
-                print(f"Password set successfully for OAuth user: {user_data.email}")
-                return RegistrationResponse(
-                    success=True,
-                    message="Password set successfully! You can now log in with your email and password.",
-                    email_sent=False  # No email needed since they already verified via OAuth
-                )
-            else:
-                # Regular duplicate email error
-                print(f"Regular duplicate email for: {user_data.email}")
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="Email already registered"
-                )
-
-        # Validate password
-        if not validate_password(user_data.password):
-            print(f"Invalid password for email: {user_data.email}")
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Password must be at least 8 characters with uppercase, lowercase, and number"
-            )
-
-        print(f"Creating user for email: {user_data.email}")
-
-        # Create new user
-        user = User(
-            email=user_data.email,
-            name=user_data.name,
-            company=user_data.company,
-            job_title=user_data.job_title
-        )
-        user.set_password(user_data.password)
-
-        # Generate verification token
-        user.generate_verification_token()
-
-        db.add(user)
-        db.commit()
-        db.refresh(user)
-
-        print(f"User created successfully: {user.email}")
-
-        # Send verification email instead of welcome email
-        email_sent = False
-        try:
-            email_result = email_service.send_verification_email(user.email, user.email_verification_token)
-            if email_result:
-                print(f"Verification email sent successfully to {user.email}")
-                email_sent = True
-            else:
-                print(f"Failed to send verification email to {user.email}")
-        except Exception as e:
-            # Don't fail registration if email fails
-            print(f"Verification email error: {e}")
-
-        print(f"Registration completed for: {user.email}")
-        return RegistrationResponse(
-            success=True,
-            message="Registration successful. Please check your email to verify your account.",
-            email_sent=email_sent
-        )
-
-    except HTTPException:
-        # Re-raise HTTP exceptions as-is
-        raise
-    except Exception as e:
-        print(f"Unexpected error during registration for {user_data.email}: {str(e)}")
-        db.rollback()
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="An unexpected error occurred during registration. Please try again."
-        )
+    """Deprecated: Registration is handled by Supabase Auth."""
+    raise HTTPException(
+        status_code=status.HTTP_410_GONE,
+        detail="Registration has moved to Supabase Auth. Please use the frontend sign-up form which uses Supabase."
+    )
 
 # Pydantic models for password operations
 class SetPasswordRequest(BaseModel):
@@ -500,214 +393,57 @@ class EmailRequest(BaseModel):
 # Email Verification Endpoints
 @router.post("/send-verification", response_model=MessageResponse)
 async def send_verification_email(email_data: EmailRequest, db: Session = Depends(get_db)):
-    """Send email verification"""
-    user = db.query(User).filter(User.email == email_data.email).first()
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="User not found"
-        )
-    
-    if user.email_verified:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Email already verified"
-        )
-    
-    # Generate verification token
-    user.generate_verification_token()
-    db.commit()
-    
-    # Send verification email
-    if email_service.send_verification_email(user.email, user.email_verification_token):
-        return MessageResponse(message="Verification email sent successfully")
-    else:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to send verification email"
-        )
+    """Deprecated: Email verification is handled by Supabase Auth."""
+    raise HTTPException(
+        status_code=status.HTTP_410_GONE,
+        detail="Email verification is handled by Supabase Auth. Please request a new verification from the frontend."
+    )
 
 @router.post("/verify-email", response_model=MessageResponse)
 async def verify_email(token_data: dict, db: Session = Depends(get_db)):
-    """Verify email with token"""
-    token = token_data.get("token")
-    if not token:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Token is required"
-        )
-    
-    user = db.query(User).filter(User.email_verification_token == token).first()
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid or expired token"
-        )
-    
-    if user.verify_verification_token(token):
-        db.commit()
-        return MessageResponse(message="Email verified successfully")
-    else:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid or expired token"
-        )
+    """Deprecated: Email verification is handled by Supabase Auth."""
+    raise HTTPException(
+        status_code=status.HTTP_410_GONE,
+        detail="Email verification is handled by Supabase Auth. Use the link sent by Supabase."
+    )
 
 @router.get("/verify-email", response_class=HTMLResponse)
 async def verify_email_get(token: str, db: Session = Depends(get_db)):
-    """Verify email with token via GET request (for email links)"""
-    if not token:
-        return """
-        <html>
-        <head>
-            <title>Email Verification - Envoyou</title>
-            <style>
-                body { font-family: Arial, sans-serif; text-align: center; padding: 50px; }
-                .error { color: #dc3545; }
-                .container { max-width: 600px; margin: 0 auto; }
-            </style>
-        </head>
-        <body>
-            <div class="container">
-                <h1 class="error">Verification Failed</h1>
-                <p>No verification token provided.</p>
-                <p>Please check your email for the correct verification link.</p>
-            </div>
-        </body>
-        </html>
-        """
-    
-    user = db.query(User).filter(User.email_verification_token == token).first()
-    if not user:
-        return """
-        <html>
-        <head>
-            <title>Email Verification - Envoyou</title>
-            <style>
-                body { font-family: Arial, sans-serif; text-align: center; padding: 50px; }
-                .error { color: #dc3545; }
-                .container { max-width: 600px; margin: 0 auto; }
-            </style>
-        </head>
-        <body>
-            <div class="container">
-                <h1 class="error">Verification Failed</h1>
-                <p>This verification link is invalid or has expired.</p>
-                <p>Please request a new verification email or contact support.</p>
-            </div>
-        </body>
-        </html>
-        """
-    
-    if user.verify_verification_token(token):
-        db.commit()
-        return f"""
-        <html>
-        <head>
-            <title>Email Verification - Envoyou</title>
-            <style>
-                body {{ font-family: Arial, sans-serif; text-align: center; padding: 50px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }}
-                .success {{ color: #28a745; }}
-                .container {{ max-width: 600px; margin: 0 auto; background: white; padding: 40px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); color: #333; }}
-                .btn {{ background-color: #4CAF50; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block; margin-top: 20px; }}
-            </style>
-        </head>
-        <body>
-            <div class="container">
-                <h1 class="success">✅ Email Verified Successfully!</h1>
-                <p>Welcome to Envoyou, <strong>{user.name}</strong>!</p>
-                <p>Your email address <strong>{user.email}</strong> has been verified.</p>
-                <p>You can now log in to your account and start using our services.</p>
-                <a href="/" class="btn">Go to Login</a>
-            </div>
-        </body>
-        </html>
-        """
-    else:
-        return """
-        <html>
-        <head>
-            <title>Email Verification - Envoyou</title>
-            <style>
-                body { font-family: Arial, sans-serif; text-align: center; padding: 50px; }
-                .error { color: #dc3545; }
-                .container { max-width: 600px; margin: 0 auto; }
-            </style>
-        </head>
-        <body>
-            <div class="container">
-                <h1 class="error">Verification Failed</h1>
-                <p>This verification link is invalid or has expired.</p>
-                <p>Please request a new verification email or contact support.</p>
-            </div>
-        </body>
-        </html>
-        """
+    """Deprecated: Email verification redirect handled by Supabase Auth."""
+    return """
+    <html>
+    <head>
+        <title>Email Verification - Envoyou</title>
+        <style>
+            body { font-family: Arial, sans-serif; text-align: center; padding: 50px; }
+            .container { max-width: 600px; margin: 0 auto; }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h1>Verification Handled by Supabase</h1>
+            <p>Please use the verification link sent by Supabase. You can close this tab.</p>
+        </div>
+    </body>
+    </html>
+    """
 
 # Password Management Endpoints
 @router.post("/forgot-password", response_model=MessageResponse)
 async def forgot_password(request: dict, db: Session = Depends(get_db)):
-    """Send password reset email"""
-    email = request.get("email")
-    if not email:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Email is required"
-        )
-    
-    user = db.query(User).filter(User.email == email).first()
-    if not user:
-        # Don't reveal if email exists or not for security
-        return MessageResponse(message="If the email exists, a reset link has been sent")
-    
-    # Generate reset token
-    user.generate_reset_token()
-    db.commit()
-    
-    # Send reset email
-    if email_service.send_password_reset_email(user.email, user.password_reset_token):
-        return MessageResponse(message="Password reset email sent successfully")
-    else:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to send reset email"
-        )
+    """Deprecated: Use Supabase resetPasswordForEmail via frontend."""
+    raise HTTPException(
+        status_code=status.HTTP_410_GONE,
+        detail="Password reset is handled by Supabase Auth. Please use the frontend forgot password form."
+    )
 
 @router.post("/reset-password", response_model=MessageResponse)
 async def reset_password(request: dict, db: Session = Depends(get_db)):
-    """Reset password with token"""
-    token = request.get("token")
-    new_password = request.get("password")
-    
-    if not token or not new_password:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Token and new password are required"
-        )
-    
-    # Validate password
-    if not validate_password(new_password):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Password must be at least 8 characters with uppercase, lowercase, and number"
-        )
-    
-    user = db.query(User).filter(User.password_reset_token == token).first()
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid or expired token"
-        )
-    
-    if user.verify_reset_token(token):
-        user.set_password(new_password)
-        db.commit()
-        return MessageResponse(message="Password reset successfully")
-    else:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid or expired token"
-        )
+    """Deprecated: Use Supabase password update via frontend after magic link."""
+    raise HTTPException(
+        status_code=status.HTTP_410_GONE,
+        detail="Password reset is handled by Supabase Auth. Use the reset link from Supabase."
+    )
 
 @router.post("/change-password", response_model=MessageResponse)
 async def change_password(

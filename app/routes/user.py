@@ -1,64 +1,58 @@
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, List
 import os
 import uuid
-from datetime import datetime, UTC
+from datetime import datetime, UTC, timedelta
 
 from ..models.database import get_db
 from ..models.user import User
 from ..models.api_key import APIKey
 from ..models.session import Session
-from ..utils.jwt import verify_token
 from ..services.redis_service import redis_service
+from ..middleware.supabase_auth import (
+    get_current_user as get_supabase_user,
+    SupabaseUser,
+)
 
 router = APIRouter()
-security = HTTPBearer()
+
 
 # Pydantic models for request/response
+class UserProfileResponse(BaseModel):
+    class Config:
+        extra = "allow"
+
+
 class UserProfileUpdate(BaseModel):
     name: Optional[str] = None
     company: Optional[str] = None
     job_title: Optional[str] = None
     timezone: Optional[str] = None
 
-class UserProfileResponse(BaseModel):
-    id: str
-    email: str
-    name: str
-    company: Optional[str]
-    job_title: Optional[str]
-    avatar_url: Optional[str]
-    timezone: str
-    email_verified: bool
-    two_factor_enabled: bool
-    created_at: Optional[str]
-    last_login: Optional[str]
+
+class APIKeyResponse(BaseModel):
+    class Config:
+        extra = "allow"
+
+
+class APIKeyListResponse(BaseModel):
+    api_keys: List[APIKeyResponse]
+
 
 class APIKeyCreate(BaseModel):
     name: str
-    permissions: list = ["read"]
+    permissions: List[str] = []
 
-class APIKeyResponse(BaseModel):
-    id: str
-    name: str
-    prefix: str
-    created_at: Optional[str]
-    last_used: Optional[str]
-    usage_count: int
-    permissions: list
-
-class APIKeyListResponse(BaseModel):
-    api_keys: list[APIKeyResponse]
 
 class APIKeyCreateResponse(BaseModel):
     id: str
     name: str
     key: str  # Only shown once during creation
     prefix: str
-    permissions: list
+    permissions: List[str]
+
 
 class APITokenInfoResponse(BaseModel):
     exists: bool
@@ -68,21 +62,21 @@ class APITokenInfoResponse(BaseModel):
     last_used: Optional[str] = None
     usage_count: int = 0
 
+
 class APITokenCreateResponse(BaseModel):
     id: str
     prefix: str
     key: str  # Only shown once
 
+
 class SessionResponse(BaseModel):
-    id: str
-    device: str
-    ip: str
-    location: str
-    last_active: Optional[str]
-    current: bool
+    class Config:
+        extra = "allow"
+
 
 class SessionListResponse(BaseModel):
-    sessions: list[SessionResponse]
+    sessions: List[SessionResponse]
+
 
 class UserStatsResponse(BaseModel):
     total_calls: int
@@ -91,34 +85,51 @@ class UserStatsResponse(BaseModel):
     active_keys: int
     last_activity: Optional[str]
 
-# Dependency to get current user
-async def get_current_user(
-    credentials: HTTPAuthorizationCredentials = Depends(security),
+
+async def get_db_user(
+    supa_user: SupabaseUser = Depends(get_supabase_user),
     db: Session = Depends(get_db)
 ):
-    """Get current authenticated user"""
-    token_data = verify_token(credentials.credentials, "access")
-    if not token_data or not token_data.email:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid authentication token"
-        )
-    
-    user = db.query(User).filter(User.email == token_data.email).first()
+    """Get or create DB user based on Supabase-authenticated user"""
+    user = db.query(User).filter(User.email == supa_user.email).first()
     if not user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="User not found"
+        user = User(
+            email=supa_user.email,
+            name=supa_user.name or supa_user.email.split("@")[0],
+            avatar_url=supa_user.avatar_url,
+            email_verified=supa_user.email_verified,
+            auth_provider="supabase",
+            auth_provider_id=supa_user.id,
         )
-    
-    # Update last login
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+    else:
+        updated = False
+        if user.auth_provider != "supabase":
+            user.auth_provider = "supabase"
+            updated = True
+        if user.auth_provider_id != supa_user.id:
+            user.auth_provider_id = supa_user.id
+            updated = True
+        if supa_user.name and user.name != supa_user.name:
+            user.name = supa_user.name
+            updated = True
+        if user.avatar_url != supa_user.avatar_url:
+            user.avatar_url = supa_user.avatar_url
+            updated = True
+        if user.email_verified != supa_user.email_verified:
+            user.email_verified = supa_user.email_verified
+            updated = True
+        if updated:
+            db.commit()
+
     user.update_last_login()
     db.commit()
-    
     return user
 
 @router.get("/profile", response_model=UserProfileResponse)
-async def get_user_profile(current_user: User = Depends(get_current_user)):
+async def get_user_profile(current_user: User = Depends(get_db_user)):
     """Get current user profile with Redis caching"""
     user_id = current_user.id
 
@@ -136,10 +147,10 @@ async def get_user_profile(current_user: User = Depends(get_current_user)):
     return UserProfileResponse(**profile_data)
 
 @router.get("/stats", response_model=UserStatsResponse)
-async def get_user_stats(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+async def get_user_stats(current_user: User = Depends(get_db_user), db: Session = Depends(get_db)):
     """Get user usage statistics"""
     from sqlalchemy import func
-    from datetime import datetime, timedelta
+    current_user: User = Depends(get_db_user),
 
     # Get all active API keys for the user
     api_keys = db.query(APIKey).filter(
@@ -181,7 +192,7 @@ async def get_user_stats(current_user: User = Depends(get_current_user), db: Ses
 @router.put("/profile", response_model=UserProfileResponse)
 async def update_user_profile(
     profile_data: UserProfileUpdate,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_db_user),
     db: Session = Depends(get_db)
 ):
     """Update user profile"""
@@ -194,7 +205,7 @@ async def update_user_profile(
         current_user.job_title = profile_data.job_title
     if profile_data.timezone is not None:
         current_user.timezone = profile_data.timezone
-    
+
     db.commit()
     db.refresh(current_user)
 
@@ -206,7 +217,7 @@ async def update_user_profile(
 @router.post("/avatar")
 async def upload_avatar(
     file: UploadFile = File(...),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_db_user),
     db: Session = Depends(get_db)
 ):
     """Upload user avatar"""
@@ -254,7 +265,7 @@ async def upload_avatar(
     }
 
 @router.get("/api-keys", response_model=APIKeyListResponse)
-async def get_api_keys(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+async def get_api_keys(current_user: User = Depends(get_db_user), db: Session = Depends(get_db)):
     """Get all API keys for current user"""
     api_keys = db.query(APIKey).filter(
         APIKey.user_id == current_user.id,
@@ -266,7 +277,7 @@ async def get_api_keys(current_user: User = Depends(get_current_user), db: Sessi
 @router.post("/api-keys", response_model=APIKeyCreateResponse)
 async def create_api_key(
     key_data: APIKeyCreate,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_db_user),
     db: Session = Depends(get_db)
 ):
     """Create a new API key"""
@@ -306,7 +317,7 @@ async def create_api_key(
 @router.delete("/api-keys/{key_id}")
 async def delete_api_key(
     key_id: str,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_db_user),
     db: Session = Depends(get_db)
 ):
     """Delete an API key"""
@@ -330,7 +341,7 @@ async def delete_api_key(
     }
 
 @router.get("/api-token", response_model=APITokenInfoResponse)
-async def get_api_token_info(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+async def get_api_token_info(current_user: User = Depends(get_db_user), db: Session = Depends(get_db)):
     """Get the user's personal API token info (no full key returned)."""
     personal_key = db.query(APIKey).filter(
         APIKey.user_id == current_user.id,
@@ -352,12 +363,12 @@ async def get_api_token_info(current_user: User = Depends(get_current_user), db:
     )
 
 @router.post("/api-token", response_model=APITokenCreateResponse)
-async def create_api_token(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+async def create_api_token(current_user: User = Depends(get_db_user), db: Session = Depends(get_db)):
     """Create a new personal API token. If exists, return 409 to force explicit regeneration."""
     existing = db.query(APIKey).filter(
         APIKey.user_id == current_user.id,
         APIKey.is_active == True,
-        APIKey.name == "Personal Token"
+        APIKey.name == "Personal Token",
     ).first()
 
     if existing:
@@ -372,7 +383,7 @@ async def create_api_token(current_user: User = Depends(get_current_user), db: S
     return APITokenCreateResponse(id=new_key.id, prefix=new_key.prefix, key=full_token)
 
 @router.post("/api-token/regenerate", response_model=APITokenCreateResponse)
-async def regenerate_api_token(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+async def regenerate_api_token(current_user: User = Depends(get_db_user), db: Session = Depends(get_db)):
     """Regenerate (rotate) the user's personal API token, returning the new token."""
     personal_key = db.query(APIKey).filter(
         APIKey.user_id == current_user.id,
@@ -396,7 +407,7 @@ async def regenerate_api_token(current_user: User = Depends(get_current_user), d
 
 @router.get("/sessions", response_model=SessionListResponse)
 async def get_user_sessions(
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_db_user),
     db: Session = Depends(get_db)
 ):
     """Get all active sessions for current user"""
@@ -422,7 +433,7 @@ async def get_user_sessions(
 @router.delete("/sessions/{session_id}")
 async def delete_user_session(
     session_id: str,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_db_user),
     db: Session = Depends(get_db)
 ):
     """Delete a specific session"""
@@ -444,6 +455,6 @@ async def delete_user_session(
 
 # Plan endpoint
 @router.get("/plan")
-async def get_user_plan(current_user: User = Depends(get_current_user)):
+async def get_user_plan(current_user: User = Depends(get_db_user)):
     """Get current user's plan"""
     return {"plan": current_user.plan or "FREE"}
