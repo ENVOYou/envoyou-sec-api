@@ -140,6 +140,8 @@ class Settings(BaseSettings):
 
     # Cloudflare Configuration
     CLOUDFLARE_API_TOKEN: Optional[str] = None
+    CLOUDFLARE_ACCOUNT_ID: Optional[str] = None
+    CLOUDFLARE_ZONE_ID: Optional[str] = None
 
     # Redis Configuration (Upstash)
     REDIS_URL: Optional[str] = None
