@@ -60,6 +60,19 @@ class APIKeyCreateResponse(BaseModel):
     prefix: str
     permissions: list
 
+class APITokenInfoResponse(BaseModel):
+    exists: bool
+    id: Optional[str] = None
+    prefix: Optional[str] = None
+    created_at: Optional[str] = None
+    last_used: Optional[str] = None
+    usage_count: int = 0
+
+class APITokenCreateResponse(BaseModel):
+    id: str
+    prefix: str
+    key: str  # Only shown once
+
 class SessionResponse(BaseModel):
     id: str
     device: str
@@ -315,6 +328,71 @@ async def delete_api_key(
     return {
         "message": "API key deleted successfully"
     }
+
+@router.get("/api-token", response_model=APITokenInfoResponse)
+async def get_api_token_info(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Get the user's personal API token info (no full key returned)."""
+    personal_key = db.query(APIKey).filter(
+        APIKey.user_id == current_user.id,
+        APIKey.is_active == True,
+        APIKey.name == "Personal Token"
+    ).first()
+
+    if not personal_key:
+        return APITokenInfoResponse(exists=False, usage_count=0)
+
+    key_dict = personal_key.to_dict()
+    return APITokenInfoResponse(
+        exists=True,
+        id=key_dict["id"],
+        prefix=key_dict["prefix"],
+        created_at=key_dict["created_at"],
+        last_used=key_dict["last_used"],
+        usage_count=key_dict["usage_count"],
+    )
+
+@router.post("/api-token", response_model=APITokenCreateResponse)
+async def create_api_token(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Create a new personal API token. If exists, return 409 to force explicit regeneration."""
+    existing = db.query(APIKey).filter(
+        APIKey.user_id == current_user.id,
+        APIKey.is_active == True,
+        APIKey.name == "Personal Token"
+    ).first()
+
+    if existing:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="API token already exists. Use regenerate to rotate token.")
+
+    new_key = APIKey(user_id=current_user.id, name="Personal Token", permissions=["read"])
+    full_token = new_key._generate_key()
+    db.add(new_key)
+    db.commit()
+    db.refresh(new_key)
+
+    return APITokenCreateResponse(id=new_key.id, prefix=new_key.prefix, key=full_token)
+
+@router.post("/api-token/regenerate", response_model=APITokenCreateResponse)
+async def regenerate_api_token(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Regenerate (rotate) the user's personal API token, returning the new token."""
+    personal_key = db.query(APIKey).filter(
+        APIKey.user_id == current_user.id,
+        APIKey.is_active == True,
+        APIKey.name == "Personal Token"
+    ).first()
+
+    if not personal_key:
+        # If none exists, create one
+        personal_key = APIKey(user_id=current_user.id, name="Personal Token", permissions=["read"])
+        full_token = personal_key._generate_key()
+        db.add(personal_key)
+    else:
+        # Rotate existing key in place
+        full_token = personal_key._generate_key()
+
+    db.commit()
+    db.refresh(personal_key)
+
+    return APITokenCreateResponse(id=personal_key.id, prefix=personal_key.prefix, key=full_token)
 
 @router.get("/sessions", response_model=SessionListResponse)
 async def get_user_sessions(
