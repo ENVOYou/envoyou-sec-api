@@ -20,7 +20,8 @@ class CloudflareService:
         self.api_token = settings.CLOUDFLARE_API_TOKEN
         self.base_url = "https://api.cloudflare.com/client/v4"
         self.session = None
-        self.zone_id = None  # Will be discovered or set
+        # Prefer explicit zone configuration when available
+        self.zone_id = settings.CLOUDFLARE_ZONE_ID or None  # Will be discovered if not set
 
         # Common headers for all requests
         self.headers = {
@@ -39,7 +40,7 @@ class CloudflareService:
         return self.session
 
     async def _get_zone_id(self, domain: str = "envoyou.com") -> Optional[str]:
-        """Get zone ID for a domain"""
+        """Get zone ID for a domain. If `CLOUDFLARE_ZONE_ID` is configured, reuse it."""
         if self.zone_id:
             return self.zone_id
 
@@ -460,27 +461,40 @@ class CloudflareService:
             logger.error(f"Error creating page rule: {str(e)}")
             return {"error": str(e)}
 
-    async def get_health_check(self) -> Dict[str, Any]:
-        """Get overall Cloudflare service health"""
+    async def get_health_check(self, domain: str = "envoyou.com") -> Dict[str, Any]:
+        """Get Cloudflare health using a zone-scoped endpoint to match token scopes."""
         try:
-            # Test API connectivity
             session = await self._get_session()
-            response = await session.get("/user")
+
+            zone_id = await self._get_zone_id(domain)
+            if not zone_id:
+                return {
+                    "status": "unhealthy",
+                    "api_access": False,
+                    "error": "Zone ID not found",
+                    "timestamp": datetime.now().isoformat()
+                }
+
+            # Use a zone-scoped, read-only endpoint compatible with tokens that have Zone:Read
+            response = await session.get(f"/zones/{zone_id}/dns_records", params={"per_page": 1})
 
             if response.status_code == 200:
                 data = response.json()
-                if data["success"]:
+                # success true indicates token valid for zone scope
+                if data.get("success"):
                     return {
                         "status": "healthy",
-                        "user": data["result"]["email"],
+                        "zone_id": zone_id,
                         "api_access": True,
                         "timestamp": datetime.now().isoformat()
                     }
 
+            # Provide non-sensitive diagnostics
             return {
                 "status": "unhealthy",
                 "api_access": False,
                 "error": f"API returned {response.status_code}",
+                "details": response.text[:300],
                 "timestamp": datetime.now().isoformat()
             }
 
