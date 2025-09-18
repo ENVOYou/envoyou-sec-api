@@ -151,3 +151,9 @@ PUBLIC_ENDPOINTS: Set[str] = {
 
 def is_public_endpoint(endpoint: str) -> bool:
     return endpoint in PUBLIC_ENDPOINTS or endpoint.startswith("/static")
+
+# Dependency helper to extract a validated API key for routes
+async def get_api_key(request: Request) -> str:
+    # Reuse existing validation logic and attach state
+    await require_api_key(request)
+    return request.state.api_key
