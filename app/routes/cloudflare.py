@@ -11,7 +11,7 @@ from datetime import datetime
 from ..utils.security import require_api_key
 from ..services.cloudflare_service import cloudflare_service
 
-router = APIRouter(prefix="/cloudflare", tags=["cloudflare"])
+router = APIRouter(tags=["cloudflare"])
 
 @router.get("/health", summary="Cloudflare API Health Check")
 async def cloudflare_health():

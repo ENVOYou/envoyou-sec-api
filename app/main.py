@@ -69,6 +69,8 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 
 # Import and include routers
 from app.routes import admin, auth, global_data, health, permits, external, supabase_auth
+from app.routes.cloudflare import router as cloudflare_router
+from app.routes.environmental import router as environmental_router
 from app.routes.user import router as user_router
 from app.routes.payments import router as payments_router
 from app.routes.contact import router as contact_router
@@ -85,6 +87,8 @@ app.include_router(user_router, prefix="/v1/user")
 app.include_router(contact_router, prefix="/v1")
 app.include_router(notification_router, prefix="/v1/notifications")
 app.include_router(payments_router, prefix="/v1/payments")
+app.include_router(cloudflare_router, prefix="/v1/cloudflare")
+app.include_router(environmental_router, prefix="/v1/environmental")
 
 @app.get("/")
 async def root():

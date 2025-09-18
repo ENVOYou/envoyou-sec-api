@@ -18,7 +18,7 @@ from ..models.database import get_db
 from ..models.user import User
 from ..config import settings
 
-router = APIRouter(prefix="/payments", tags=["payments"])
+router = APIRouter(tags=["payments"])
 
 # Configure logging
 logger = logging.getLogger(__name__)

@@ -19,7 +19,7 @@ from app.models.notification import (
 from app.services.redis_service import redis_service
 
 
-router = APIRouter(prefix="/api/notifications", tags=["notifications"])
+router = APIRouter(tags=["notifications"])
 
 
 # Pydantic models for API
