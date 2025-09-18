@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Query
 from typing import List
 from app.models.permit import Permit
 from app.models.permit_search import PermitSearchParams
@@ -35,9 +35,12 @@ async def get_permits_stats():
     return {"status": "success", "data": stats}
 
 @router.get("/search")
-async def search_permits(params: PermitSearchParams = Depends()):
-    if not (params.nama or params.jenis or params.status):
-        raise HTTPException(status_code=400, detail="At least one search parameter required (nama, jenis, or status)")
+async def search_permits(
+    params: PermitSearchParams = Depends(),
+    q: str | None = Query(None, description="Generic search across company name, permit type, and status")
+):
+    if not (params.nama or params.jenis or params.status or q):
+        raise HTTPException(status_code=400, detail="At least one search parameter required (q, nama, jenis, or status)")
     
     client = AmdalnetClient()
     all_permits = client.get_sk_final()
@@ -47,12 +50,21 @@ async def search_permits(params: PermitSearchParams = Depends()):
         permit_type = permit.get("permit_type", "").lower()
         permit_status = permit.get("status", "").lower()
 
+        # Match priority: specific fields first, then generic q
         if params.nama and params.nama.lower() not in company_name:
             continue
         if params.jenis and params.jenis.lower() not in permit_type:
             continue
         if params.status and params.status.lower() != permit_status:
             continue
+        if q:
+            ql = q.lower()
+            if not (
+                ql in company_name or
+                ql in permit_type or
+                ql in permit_status
+            ):
+                continue
         results.append(permit)
     return {"status": "success", "data": results}
 
