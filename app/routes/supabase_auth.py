@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status
+import uuid
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from typing import Optional
@@ -58,6 +59,16 @@ async def verify_supabase_token(
                 auth_provider="supabase",
                 auth_provider_id=supabase_user.id
             )
+            # Some deployments still have NOT NULL constraint on password_hash.
+            # Generate a random unusable password so constraint passes while
+            # keeping account secure (user cannot know this value).
+            if getattr(user, 'password_hash', None) is None:
+                try:
+                    # leverage set_password if available
+                    user.set_password(str(uuid.uuid4()))  # type: ignore[attr-defined]
+                except Exception:
+                    # Fallback: simple random string assignment (already hashed column acceptable?)
+                    user.password_hash = "oauth_placeholder_" + str(uuid.uuid4())
             db.add(user)
             db.commit()
             db.refresh(user)
