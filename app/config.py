@@ -122,6 +122,8 @@ class Settings(BaseSettings):
     SUPABASE_ANON_KEY: Optional[str] = None
     SUPABASE_JWT_SECRET: Optional[str] = None
     ENABLE_SUPABASE_AUTH: bool = False
+    # Verbose Supabase auth debug (header/payload prints)
+    DEBUG_SUPABASE_AUTH: bool = False
 
     # Paddle Payment Configuration
     PADDLE_API_KEY: Optional[str] = None
