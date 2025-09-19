@@ -84,6 +84,8 @@ class Notification(Base):
             "message": self.message,
             "html_content": self.html_content,
             "read": self.read,
+            # Backward compatible alias for frontend expecting `is_read`
+            "is_read": self.read,
             "read_at": self.read_at.isoformat() if self.read_at else None,
             "metadata": self.metadata_json,
             "created_at": self.created_at.isoformat(),
