@@ -150,12 +150,6 @@ async def get_user_profile(current_user: User = Depends(get_db_user)):
 async def get_user_stats(current_user: User = Depends(get_db_user), db: Session = Depends(get_db)):
     """Get user usage statistics"""
     from sqlalchemy import func
-    # Defensive guard: ensure current_user is a User instance, not a tuple (caused by trailing comma mistakes)
-    if isinstance(current_user, tuple):  # pragma: no cover (debug safeguard)
-        try:
-            current_user = current_user[0]
-        except Exception:
-            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Malformed current_user dependency result")
 
     # Get all active API keys for the user
     api_keys = db.query(APIKey).filter(
