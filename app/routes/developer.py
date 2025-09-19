@@ -73,13 +73,62 @@ async def rate_limits(request):
     try:
         limit_str = get_rate_limit_for_key(request)
         health = await redis_metrics.get_health_status()
+        parsed = {}
+        if limit_str and "/" in limit_str:
+            parts = limit_str.split("/", 1)
+            try:
+                parsed = {
+                    "limit": int(parts[0]),
+                    "window_seconds": int(parts[1])
+                }
+            except ValueError:
+                parsed = {"raw": limit_str}
         return JSONResponse({
             "status": "success",
             "data": {
                 "rate_limit": limit_str,
+                "parsed": parsed,
                 "backend": "redis" if health.get("available") else "memory",
                 "timestamp": datetime.now(timezone.utc).isoformat()
             }
         })
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to fetch rate limits: {str(e)}")
+
+
+@router.get("/rate-limits/details", summary="Parsed rate limit details", dependencies=[Depends(require_api_key)])
+async def rate_limits_details(request):
+    try:
+        limit_str = get_rate_limit_for_key(request)
+        if not limit_str:
+            return JSONResponse({
+                "status": "success",
+                "data": {
+                    "limit": 0,
+                    "window_seconds": 0,
+                    "raw": None
+                }
+            })
+        limit_val = 0
+        window_val = 0
+        raw = limit_str
+        if "/" in limit_str:
+            a, b = limit_str.split("/", 1)
+            try:
+                limit_val = int(a)
+                window_val = int(b)
+            except ValueError:
+                pass
+        return JSONResponse({
+            "status": "success",
+            "data": {
+                "limit": limit_val,
+                "window_seconds": window_val,
+                "raw": raw,
+                "window_minutes": round(window_val / 60, 2) if window_val else 0,
+                "window_hours": round(window_val / 3600, 2) if window_val else 0,
+                "timestamp": datetime.now(timezone.utc).isoformat()
+            }
+        })
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to fetch detailed rate limits: {str(e)}")

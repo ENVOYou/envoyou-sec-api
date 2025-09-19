@@ -125,5 +125,8 @@ class User(Base):
             "auth_provider": self.auth_provider,
             "has_local_password": self.password_hash is not None,
             "created_at": self.created_at.isoformat() if self.created_at else None,
-            "last_login": self.last_login.isoformat() if self.last_login else None
+            "last_login": self.last_login.isoformat() if self.last_login else None,
+            # Added fields for dashboard synchronization
+            "plan": self.plan,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
         }
