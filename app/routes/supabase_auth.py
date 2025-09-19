@@ -11,7 +11,7 @@ router = APIRouter()
 
 # Supabase JWT Authentication Endpoints
 class SupabaseAuthRequest(BaseModel):
-    supabase_token: str
+    supabase_token: Optional[str] = None
 
 class SupabaseAuthResponse(BaseModel):
     access_token: str
@@ -23,15 +23,29 @@ class SupabaseAuthResponse(BaseModel):
 @router.post("/supabase/verify", response_model=SupabaseAuthResponse)
 async def verify_supabase_token(
     auth_request: SupabaseAuthRequest,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    authorization: Optional[str] = None
 ):
     """
     Verify Supabase JWT token and create/update user in database.
     This endpoint replaces manual OAuth handling by verifying Supabase tokens.
     """
     try:
-        # Verify the Supabase JWT token
-        supabase_user = supabase_auth.verify_token(auth_request.supabase_token)
+        token = auth_request.supabase_token
+        # Fallback: read from Authorization header
+        if (not token or token.strip() == "") and authorization:
+            try:
+                scheme, bearer = authorization.split(" ", 1)
+                if scheme.lower() == "bearer":
+                    token = bearer
+            except Exception:
+                pass
+        if not token:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Missing Supabase token")
+
+    print(f"[SUPABASE VERIFY ENDPOINT] token_length={len(token)}")
+    # Verify the Supabase JWT token
+        supabase_user = supabase_auth.verify_token(token)
 
         # Check if user exists in our database
         user = db.query(User).filter(User.email == supabase_user.email).first()
