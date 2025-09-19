@@ -66,11 +66,32 @@ class SupabaseAuthMiddleware:
                 detail="Token has expired"
             )
         except jwt.InvalidTokenError as e:
-            print(f"[SUPABASE VERIFY] Invalid token error: {e}")
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid token"
-            )
+            # Attempt fallback: maybe this is an internal app JWT, not a Supabase token
+            try:
+                internal_payload = jwt.decode(
+                    token,
+                    settings.JWT_SECRET_KEY,
+                    algorithms=["HS256"],
+                    options={"verify_aud": False}
+                )
+                print("[SUPABASE VERIFY] Fallback internal JWT accepted")
+                user_id = internal_payload.get("sub")
+                email = internal_payload.get("email")
+                if not user_id or not email:
+                    raise ValueError("Missing sub/email in internal token")
+                return SupabaseUser(
+                    id=user_id,
+                    email=email,
+                    name=None,
+                    avatar_url=None,
+                    email_verified=True
+                )
+            except Exception as ie:
+                print(f"[SUPABASE VERIFY] Invalid token error (supabase + internal fallback failed): {e} / {ie}")
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Invalid token"
+                )
         except Exception as e:
             print(f"[SUPABASE VERIFY] Generic verification failure: {e}")
             raise HTTPException(
