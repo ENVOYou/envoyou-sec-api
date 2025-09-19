@@ -32,8 +32,11 @@ class SupabaseAuthMiddleware:
             except Exception as e:  # pragma: no cover
                 print(f"[SUPABASE VERIFY] Failed to parse header: {e}")
 
-            payload = jwt.decode(token, settings.SUPABASE_JWT_SECRET, algorithms=["HS256"])
-            print(f"[SUPABASE VERIFY] Payload keys: {list(payload.keys())[:10]}")
+            # Disable audience verification because Supabase sets aud to authenticated/ or project ref
+            # We only care about signature validity here.
+            payload = jwt.decode(token, settings.SUPABASE_JWT_SECRET, algorithms=["HS256"], options={"verify_aud": False})
+            aud = payload.get('aud')
+            print(f"[SUPABASE VERIFY] Payload keys: {list(payload.keys())[:10]} aud={aud}")
 
             # Extract user information from token
             user_id = payload.get("sub")
