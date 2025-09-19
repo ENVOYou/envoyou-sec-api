@@ -32,7 +32,6 @@ async def verify_supabase_token(
     """
     try:
         token = auth_request.supabase_token
-        # Fallback: read from Authorization header
         if (not token or token.strip() == "") and authorization:
             try:
                 scheme, bearer = authorization.split(" ", 1)
@@ -43,8 +42,8 @@ async def verify_supabase_token(
         if not token:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Missing Supabase token")
 
-    print(f"[SUPABASE VERIFY ENDPOINT] token_length={len(token)}")
-    # Verify the Supabase JWT token
+        print(f"[SUPABASE VERIFY ENDPOINT] token_length={len(token)}")
+        # Verify the Supabase JWT token
         supabase_user = supabase_auth.verify_token(token)
 
         # Check if user exists in our database
