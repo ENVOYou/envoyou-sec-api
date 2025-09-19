@@ -23,11 +23,22 @@ class SupabaseAuthMiddleware:
         """Verify Supabase JWT token and extract user information"""
         try:
             # Decode JWT token
+            # Log minimal token shape
+            try:
+                header_segment = token.split('.')[0]
+                import base64, json
+                header_json = json.loads(base64.urlsafe_b64decode(header_segment + '===').decode())
+                print(f"[SUPABASE VERIFY] Header alg={header_json.get('alg')} kid={header_json.get('kid')}")
+            except Exception as e:  # pragma: no cover
+                print(f"[SUPABASE VERIFY] Failed to parse header: {e}")
+
             payload = jwt.decode(token, settings.SUPABASE_JWT_SECRET, algorithms=["HS256"])
+            print(f"[SUPABASE VERIFY] Payload keys: {list(payload.keys())[:10]}")
 
             # Extract user information from token
             user_id = payload.get("sub")
-            email = payload.get("email")
+            # Some Supabase tokens may nest email only in user_metadata
+            email = payload.get("email") or payload.get("user_metadata", {}).get("email")
             name = payload.get("user_metadata", {}).get("name") or payload.get("user_metadata", {}).get("full_name")
             avatar_url = payload.get("user_metadata", {}).get("avatar_url")
             email_verified = payload.get("email_confirmed_at") is not None
@@ -51,12 +62,14 @@ class SupabaseAuthMiddleware:
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Token has expired"
             )
-        except jwt.InvalidTokenError:
+        except jwt.InvalidTokenError as e:
+            print(f"[SUPABASE VERIFY] Invalid token error: {e}")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid token"
             )
         except Exception as e:
+            print(f"[SUPABASE VERIFY] Generic verification failure: {e}")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail=f"Token verification failed: {str(e)}"
