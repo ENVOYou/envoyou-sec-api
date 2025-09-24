@@ -18,6 +18,11 @@ jobs:
     env:
       ENVOYOU_RUN_ALL_TESTS: ${{ github.event.inputs.full_regression || 'false' }}
       PYTHONDONTWRITEBYTECODE: 1
+      # Required for app.config.Settings and Supabase middleware during import
+      JWT_SECRET_KEY: test_jwt_secret_for_ci
+      SUPABASE_JWT_SECRET: test_supabase_secret_for_ci
+      # Optional: ensure API keys available for endpoints requiring keys
+      API_KEYS: demo_key_basic_2025:Demo Basic:basic,demo_key_premium_2025:Demo Premium:premium
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
