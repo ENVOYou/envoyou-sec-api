@@ -79,19 +79,22 @@ def compute_cevs_for_company(company_name: str, *, company_country: Optional[str
     eea_client = EEAClient()
     # New: country renewables row and EU average row for comparison
     renew_row = eea_client.get_country_renewables(company_country) if company_country else None
+    import inspect
+    renew_all = []
     try:
-        renew_all = eea_client.get_countries_renewables()
-        import inspect
-        if inspect.isawaitable(renew_all):
+        if not inspect.iscoroutinefunction(EEAClient.get_countries_renewables):
+            renew_all = eea_client.get_countries_renewables()
+        else:
             renew_all = []
     except Exception:
         renew_all = []
     eu_row = next((r for r in renew_all if (r.get("country") or "").strip().lower() in ("eu-27", "eu27", "eu 27", "eu")), None)
     # New: industrial pollution timeseries/trend from EEA (global, not per company)
-    pol_series = eea_client.get_industrial_pollution()
+    pol_series = []
     try:
-        import inspect
-        if inspect.isawaitable(pol_series):
+        if not inspect.iscoroutinefunction(EEAClient.get_industrial_pollution):
+            pol_series = eea_client.get_industrial_pollution()
+        else:
             pol_series = []
     except Exception:
         pol_series = []
