@@ -1,0 +1,41 @@
+from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel
+from typing import Optional, List
+from sqlalchemy.orm import Session
+from app.models.database import get_db
+from app.services.audit_service import record_audit, get_audits
+
+router = APIRouter()
+
+class AuditCreateSchema(BaseModel):
+    source_file: str
+    calculation_version: str
+    company_cik: str
+    s3_path: Optional[str] = None
+    gcs_path: Optional[str] = None
+    notes: Optional[str] = None
+
+class AuditResponseSchema(BaseModel):
+    id: str
+    source_file: str
+    calculation_version: str
+    timestamp: Optional[str]
+    company_cik: str
+    s3_path: Optional[str]
+    gcs_path: Optional[str]
+    notes: Optional[str]
+
+
+@router.post("/", response_model=AuditResponseSchema)
+def create_audit(payload: AuditCreateSchema, db: Session = Depends(get_db)):
+    try:
+        entry = record_audit(db, source_file=payload.source_file, calculation_version=payload.calculation_version, company_cik=payload.company_cik, s3_path=payload.s3_path, gcs_path=payload.gcs_path, notes=payload.notes)
+        return entry.to_dict()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/", response_model=List[AuditResponseSchema])
+def list_audit(company_cik: Optional[str] = None, limit: int = 100, offset: int = 0, db: Session = Depends(get_db)):
+    entries = get_audits(db, company_cik=company_cik, limit=limit, offset=offset)
+    return [e.to_dict() for e in entries]
