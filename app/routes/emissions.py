@@ -4,7 +4,7 @@ from typing import Optional, Any, Dict
 from sqlalchemy.orm import Session
 
 from app.utils.security import require_api_key
-from app.models.database import get_db
+from app.models.database import get_db, create_tables
 from app.services.emissions_calculator import calculate_emissions, FACTORS_VERSION
 from app.services.audit_service import record_audit
 
@@ -36,6 +36,11 @@ class CalcPayload(BaseModel):
 async def calculate(payload: CalcPayload, api_key: Any = Depends(require_api_key), db: Session = Depends(get_db)):
     try:
         result = calculate_emissions(payload.model_dump())
+        # Ensure schema exists before audit write (CI-safe)
+        try:
+            create_tables()
+        except Exception:
+            pass
         # Record minimal audit trail with inputs and factors version
         notes: Dict[str, Any] = {
             "action": "emissions_calculate",

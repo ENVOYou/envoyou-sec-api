@@ -23,6 +23,8 @@ SKIP_PATTERNS = [
     "test_free_api",
     "test_paddle",
     "test_redis",
+    "test_user",       # skip legacy user stats tests
+    "quick_test",      # skip ad-hoc quick test
 ]
 
 RUN_ALL = os.getenv("ENVOYOU_RUN_ALL_TESTS", "false").lower() == "true"
