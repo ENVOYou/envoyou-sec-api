@@ -96,6 +96,8 @@ from app.routes.user import router as user_router
 from app.routes.supabase_auth import router as supabase_auth_router
 from app.routes.cloudflare import router as cloudflare_router
 from app.routes.contact import router as contact_router
+from app.routes.audit_trail import router as audit_trail_router
+from app.routes.export import router as export_router
 
 # Import security utilities
 from app.utils.security import is_public_endpoint, validate_api_key, rate_limit_dependency_factory
@@ -233,6 +235,9 @@ app.include_router(auth_router, prefix="/auth")
 app.include_router(supabase_auth_router, prefix="/auth")
 app.include_router(user_router, prefix="/user")
 app.include_router(cloudflare_router, prefix="/cloudflare")
+# New v1 routers
+app.include_router(audit_trail_router, prefix="/v1/audit")
+app.include_router(export_router, prefix="/v1/export")
 
 @app.get("/", tags=["Health"])
 async def home():
