@@ -1,5 +1,7 @@
 # Envoyou SEC API
 
+[Dokumen Tujuan & Fitur Kunci (Internal)](docs/GOALS.md)
+
 Envoyou SEC API is a focused backend service for SEC Climate Disclosure compliance. It provides auditable greenhouse gas (GHG) calculation, validation, and report export features tailored for public companies required to submit climate disclosures.
 
 ## Key goals
@@ -62,4 +64,4 @@ Envoyou SEC API is a focused backend service for SEC Climate Disclosure complian
 
 ## Maintainer
 
-- Husni Kusuma — https://github.com/hk-dev13
+- Husni Kusuma — [@hk-dev13](https://github.com/hk-dev13)
