@@ -1,0 +1,19 @@
+---
+description: Project rules for envoyou-sec-api
+globs:
+  - "utils/**/*.py"
+  - "tools/**/*.py"
+  - "main.py"
+alwaysApply: true
+
+rules: |
+  - This project is an API agent system named **envoyou-sec-api**.
+  - Code must follow **PEP8** Python style conventions.
+  - Use **async/await** for I/O and API calls whenever possible.
+  - Keep code modular: put helpers in `utils/`, tools in `tools/`, and the main entry in `main.py`.
+  - Always include docstrings (in English) for functions, classes, and modules.
+  - Use clear, descriptive variable and function names in English.
+  - When adding a new feature, prefer **configurable options** via `config.py` instead of hardcoding.
+  - Include logging (not print) for debugging and tracing execution.
+  - Tests or validation scripts should be suggested when introducing new modules.
+---

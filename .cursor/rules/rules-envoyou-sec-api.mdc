@@ -1,0 +1,20 @@
+---
+description: Project rules for Envoyou SEC API
+globs:
+  - "envoyou-sec-api/**"   # apply ke semua file di project ini
+alwaysApply: true
+
+rules: |
+  - Agents must respect modular architecture (each service self-contained).
+  - Do not modify project structure without explicit instruction.
+  - Every tool call must be logged with: agent_name, action, timestamp, input_refs, output_refs, status.
+  - Role boundaries:
+      * acquisition_agent: fetch raw data only
+      * etl_crosswalk_agent: transform and map identifiers
+      * audit_trail_agent: log all events
+      * api_serving_agent: finalize and serve reports
+  - On error, log failure and continue workflow with status "FAILED".
+  - Only use registered tools (fetch_epa_ghg_data, save_raw_data_to_s3, etc.).
+  - Never expose secrets (API keys, raw S3 paths) in user-facing responses.
+  - All outputs must be strict JSON or valid API responses.
+---
