@@ -36,5 +36,6 @@ def create_tables():
     from .notification import Base as NotificationBase
     # Import models to ensure they are registered with Base metadata
     from .audit_trail import AuditTrail  # noqa: F401
+    from .company_map import CompanyFacilityMap  # noqa: F401
     # Create all tables using the same metadata
     Base.metadata.create_all(bind=engine)

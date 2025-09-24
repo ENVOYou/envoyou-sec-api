@@ -174,6 +174,11 @@ class Settings(BaseSettings):
     ADMIN_EMAILS: str | None = None
     INSPECTOR_EMAILS: str | None = None
 
+    # Validation thresholds (EPA cross-validation)
+    VALIDATION_MIN_MATCHES: int = 1
+    VALIDATION_LOW_DENSITY_THRESHOLD: int = 3
+    VALIDATION_REQUIRE_STATE_MATCH: bool = False
+
     @model_validator(mode='after')
     def set_production_defaults(self) -> 'Settings':
         """Set production-specific defaults based on ENVIRONMENT"""

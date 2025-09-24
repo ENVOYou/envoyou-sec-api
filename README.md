@@ -8,6 +8,16 @@ Dokumen pendukung:
 - [SEC Export — Sample Outputs](docs/SEC_EXPORT_SAMPLES.md)
 - [Security Plan (Early Commitment)](docs/SECURITY_PLAN.md)
 - [Partnering Strategy (Anchor Partners)](docs/PARTNERING.md)
+- [Admin Mapping (Company → Facility)](docs/ADMIN_MAPPING.md)
+
+Endpoint ringkas (baru):
+
+- POST `/v1/validation/epa` — validasi silang EPA (flags dengan threshold)
+- POST `/v1/export/sec/package` — buat paket zip (validation.json, audit.csv) dan upload
+- Admin (premium):
+  - POST `/v1/admin/mappings` — upsert mapping
+  - GET `/v1/admin/mappings/{company}` — detail mapping
+  - GET `/v1/admin/mappings` — list mapping
 
 Envoyou SEC API is a focused backend service for SEC Climate Disclosure compliance. It provides auditable greenhouse gas (GHG) calculation, validation, and report export features tailored for public companies required to submit climate disclosures.
 
