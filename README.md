@@ -1,227 +1,65 @@
-# Envoyou CEVS Aggregator API
+# Envoyou SEC API
 
-[![Python Version](https://img.shields.io/badge/python-3.12-blue.svg)](https://www.python.org/downloads/release/python-3120/)
-[![Framework](https://img.shields.io/badge/framework-FastAPI-green.svg)](https://fastapi.tiangolo.com/)
-<!-- [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) -->
-![Badge showing license type Business Source License 1.1 in blue color](https://img.shields.io/badge/License-BSL--1.1-blue.svg) 
-![Badge showing usage status Non-Commercial in orange color](https://img.shields.io/badge/Use-Non--Commercial-orange.svg)
-![Badge showing re-license to Apache 2.0 scheduled for 2028 in green color](https://img.shields.io/badge/Re--License-Apache%202.0%20(2028)-green.svg)
-![Badge showing project status MVP Global in brightblue color](https://img.shields.io/badge/Status-MVP%20Global-brightblue.svg)
-![Badge showing build passing in success green color](https://img.shields.io/badge/Build-Passing-success.svg)
+Envoyou SEC API is a focused backend service for SEC Climate Disclosure compliance. It provides auditable greenhouse gas (GHG) calculation, validation, and report export features tailored for public companies required to submit climate disclosures.
 
-The official backend API for the [Envoyou](https://envoyou.com) platform. This service aggregates environmental data from multiple global sources to calculate a **Composite Environmental Verification Score (CEVS)**, providing a standardized metric for corporate environmental performance.
+## Key goals
 
-## 📖 Overview
+- Single-purpose MVP: calculate Scope 1 and Scope 2 emissions, produce auditable calculation records, and export SEC-ready reporting tables.
+- Forensic-grade traceability: every calculation stores inputs, emission factors, and sources in an AuditTrail.
+- Cross-validation: automatic comparison against public EPA datasets to flag significant discrepancies.
 
-The CEVS Aggregator API acts as a robust data pipeline and scoring engine. It connects to various official data sources (e.g., EPA, EEA, ISO), normalizes the incoming data into a consistent schema, and applies a sophisticated scoring algorithm to generate the CEVS for a given company.
+## Core components
 
-## 🌍 Project Summary
+- Emissions calculation engine (Scope 1 & 2)
+- AuditTrail model and repository (stores inputs, factors, source URLs, timestamps)
+- Validation service that compares reported results with EPA data
+- Exporter for SEC filing formats (10-K friendly tables and notes)
 
-For detailed information on all Project, please refer to the official **[Project Summary](PROJECT_SUMMARY.md)**.
+## Getting started (development)
 
-## ✨ Key Features
+1. Copy environment template:
 
-## ✨ Key Features
+   ```bash
+   cp .env.example .env
+   ```
 
-- **Multi-Source Data Aggregation**: Integrates with key environmental data providers:
-  - **EPA (USA)**: Facility and power plant emissions data (Envirofacts, CAMPD).
-  - **EEA (Europe)**: Industrial pollution and renewable energy statistics.
-  - **EDGAR**: Global urban emissions data.
-  - **ISO**: ISO 14001 certification status (40+ certificates integrated).
-  - **Amdalnet (Indonesia)**: Environmental permits and approvals from KLHK (integrated with dev API).
-- **Composite Environmental Verification Score (CEVS)**: A proprietary scoring model that provides a holistic view of a company's environmental impact and commitment.
-- **Secure API Access**: All critical endpoints are protected by API key authentication.
-- **Frontend Integration Ready**: Pre-configured CORS for React/Vite applications with demo API keys.
-- **Real-time CEVS Scoring**: Live calculation with comprehensive environmental data (score range: 0-100).
-- **Demo API Key System**: Built-in endpoint for generating demo keys for frontend development.
-- **Comprehensive Permit Management**: Full CRUD operations for environmental permits with search and filtering.
-- **Tier-Based Rate Limiting**: Different usage tiers (Basic, Premium) to manage API load.
-- **Robust Caching**: In-memory and file-based caching for improved performance and reduced external API calls.
-- **Standardized Data Schemas**: All data is normalized into a clean, predictable format.
-- **Asynchronous Framework**: Built with FastAPI for high performance and scalability.
-- **Dockerized**: Ready for containerized deployment in any environment.
+2. Install dependencies:
 
-## 📚 API Documentation
+   ```bash
+   pip install -r requirements.txt
+   ```
 
-For detailed information on all available endpoints, request/response formats, and usage examples, please refer to the official **[API Documentation](API_DOCUMENTATION.md)**.
+3. Run database migrations (local / staging only):
 
-## 🚀 Getting Started
+   ```bash
+   # set TEST_DATABASE_URL or DATABASE_URL in env before running
+   alembic upgrade head
+   ```
 
-### Prerequisites
-- Python 3.10+
-- Docker & Docker Compose (Recommended)
-- Node.js 18+ & npm (for frontend development)
+4. Start server (development):
 
-### 1. Environment Setup
+   ```bash
+   uvicorn app.api_server:app --reload --port 8000
+   ```
 
-First, create a `.env` file from the example template:
+## Tests
 
-```bash
-cp .env.example .env
-```
+- Use `TEST_DATABASE_URL` to ensure tests do not touch production DB.
 
-### 2. Installation
+   ```bash
+   export TEST_DATABASE_URL="sqlite:///./test.db"
+   pytest -q
+   ```
 
-Install the required Python packages:
+## Notes on production
 
-```bash
-pip install -r requirements.txt
-```
+- Do NOT commit production secrets. Store `DATABASE_URL` and other credentials in your deployment secrets manager.
+- Always backup production DB before running migrations.
 
-### 3. Running the Server
+## Project status
 
-#### Local Development (with Uvicorn)
+- This repository is being re-focused from the original permit-API fork to a dedicated Envoyou SEC compliance API. Historical permit-API code is archived in `archive/permit-api` branch.
 
-The server supports live reloading, which is ideal for development.
+## Maintainer
 
-```bash
-uvicorn app.api_server:app --reload --port 8000 --log-level debug
-```
-
-The API will be available at `http://localhost:8000`.
-
-#### Production (with Docker)
-
-Using Docker is the recommended way to run the application in production.
-
-```bash
-# Build and run the services in the background
-docker-compose up --build -d
-
-# Check the logs
-docker-compose logs -f
-
-# Stop the services
-docker-compose down
-```
-
-## 🌐 Frontend Integration
-
-### React + Vite Setup
-
-The API is designed to work seamlessly with modern frontend frameworks:
-
-1. **CORS Configuration**: Pre-configured for local development with Vite (port 5173)
-2. **Demo API Keys**: Built-in demo keys for frontend development
-3. **Real-time Data**: Live CEVS scoring with 40+ ISO certificates integration
-
-#### Example Frontend Integration
-
-```javascript
-// vite.config.js
-export default defineConfig({
-  plugins: [react()],
-  server: {
-    proxy: {
-      '/api': {
-        target: 'http://localhost:8000',
-        changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api/, '')
-      }
-    }
-  }
-})
-```
-
-#### Getting Demo API Key
-
-```javascript
-// Frontend code example
-const getDemoKey = async () => {
-  const response = await fetch('/api/admin/request-demo-key', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ tier: 'premium' })
-  });
-  const data = await response.json();
-  return data.api_key;
-};
-```
-
-## 🌍 Amdalnet Integration
-
-### Indonesian Environmental Data
-
-The API integrates with **Amdalnet** (KLHK - Kementerian Lingkungan Hidup dan Kehutanan) to provide real environmental permit data from Indonesia.
-
-#### Available Endpoints
-- **SK Final**: Environmental permits and approvals
-- **Pemrakarsa**: Business entities with environmental permits
-- **Rencana Usaha**: Business plans and activities
-- **Map Services**: Geographic project boundaries
-
-#### API Configuration
-```bash
-# Set your Amdalnet credentials in .env
-AMDALNET_API_URL=https://amdalnet-dev.kemenlh.go.id
-AMDALNET_API_KEY=your_token_here
-AMDALNET_SSO_USERNAME=your_username
-AMDALNET_SSO_PASSWORD=your_password
-```
-
-#### Getting API Access
-1. **Register** at [Amdalnet SSO](https://amdalnet-dev.kemenlh.go.id)
-2. **Login** to get authentication token
-3. **Configure** token in environment variables
-4. **Test** integration with `/permits` endpoint
-
-#### Example Usage
-```python
-from app.clients.amdalnet_client import AmdalnetClient
-
-# Initialize client
-client = AmdalnetClient(api_key="your_token")
-
-# Get environmental permits
-permits = client.get_sk_final(page=1, limit=50)
-print(f"Found {len(permits)} permits")
-```
-
-## ⚙️ Configuration
-
-The application is configured via environment variables, which are loaded by `pydantic-settings` from the `.env` file. Key configuration options are defined in `app/config.py`.
-
-- `PORT`: The port the server will run on.
-- `LOG_LEVEL`: The logging level (e.g., `DEBUG`, `INFO`, `WARNING`).
-- `API_KEYS`: A comma-separated list of valid API keys and their tiers.
-- `CAMPD_API_KEY`: Your API key for the EPA CAMPD service.
-- `*_XLSX_PATH`: Paths to local reference data files (EDGAR, ISO, Policy).
-
-## 🧪 Running Tests
-
-The project uses `pytest` for testing.
-
-```bash
-pytest
-```
----
-## Contributing
-Pull requests are welcome. For major changes, please open an [issue](https://github.com/hk-dev13/project-permit-api/issues) first to discuss what you would like to change.
-
----
-## License
-This project is released under the **Business Source License 1.1 (BSL-1.1)**.  
-- Non-commercial use only.  
-- Will be automatically re-licensed to **Apache 2.0** in 2028.  
-- See the [LICENSE](LICENSE) file for details.
-
-<!-- ### Badges
-![License: BSL-1.1](https://img.shields.io/badge/License-BSL--1.1-blue.svg)
-![Use: Non-Commercial](https://img.shields.io/badge/Use-Non--Commercial-orange.svg)
-![Re-License: Apache 2.0 (2028)](https://img.shields.io/badge/Re--License-Apache%202.0%20(2028)-green.svg)
-![Status: MVP Global](https://img.shields.io/badge/Status-MVP%20Global-brightblue.svg)
-![Build: Passing](https://img.shields.io/badge/Build-Passing-success.svg) -->
-
-## Acknowledgements
-- [FastAPI](https://fastapi.tiangolo.com/)  
-- [Uvicorn](https://www.uvicorn.org/)  
-- [Pydantic](https://docs.pydantic.dev/)  
-
-## Contact
-Maintained by [Husni Kusuma](https://github.com/hk-dev13)  
-🌐 Website: [envoyou.com](https://envoyou.com)  
-📧 More info: [info@envoyou.com](mailto:info@envoyou.com)  
-
----
-> <p style="text-align: center;">© 2025 <a href="https://envoyou.com">Envoyou</a> | All Rights Reserved</p>
-> <p style="text-align: center;">Empowering Global Environmental Transparency</p>
+- Husni Kusuma — https://github.com/hk-dev13
