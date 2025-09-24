@@ -79,6 +79,7 @@ from app.routes.developer import router as developer_router
 from app.routes.audit_trail import router as audit_trail_router
 from app.routes.export import router as export_router
 from app.routes.emissions import router as emissions_router
+from app.routes.validation import router as validation_router
 
 app.include_router(admin.router, prefix="/v1/admin")
 app.include_router(auth.router, prefix="/v1/auth")
@@ -97,6 +98,7 @@ app.include_router(developer_router, prefix="/v1/developer")
 app.include_router(audit_trail_router, prefix="/v1/audit")
 app.include_router(export_router, prefix="/v1/export")
 app.include_router(emissions_router, prefix="/v1/emissions")
+app.include_router(validation_router, prefix="/v1/validation")
 
 @app.get("/")
 async def root():
