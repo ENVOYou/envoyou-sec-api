@@ -4,7 +4,7 @@ from typing import Optional
 from app.utils.security import require_api_key
 from app.services.cevs_aggregator import compute_cevs_for_company
 from app.services.sec_exporter import cevs_to_sec_json, audit_trails_to_csv
-from app.models.database import get_db
+from app.models.database import get_db, create_tables
 from sqlalchemy.orm import Session
 from app.repositories.audit_trail_repository import list_audit_entries
 
@@ -34,6 +34,11 @@ async def export_cevs(company_name: str, company_country: Optional[str] = None, 
 
 @router.get("/sec/audit")
 async def export_audit(company_cik: Optional[str] = None, limit: int = 100, offset: int = 0, db: Session = Depends(get_db), api_key: str = Depends(require_api_key)):
+    # Ensure schema exists (helpful in CI/TestClient)
+    try:
+        create_tables()
+    except Exception:
+        pass
     entries = list_audit_entries(db, company_cik=company_cik, limit=limit, offset=offset)
     csv_text = audit_trails_to_csv([e.to_dict() for e in entries])
     return PlainTextResponse(csv_text, media_type="text/csv")
