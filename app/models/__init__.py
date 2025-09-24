@@ -19,6 +19,7 @@ from .notification import (
     NotificationPreference
 )
 from .audit_trail import AuditTrail
+from .company_map import CompanyFacilityMap
 
 # Make all models available at package level
 __all__ = [
@@ -33,4 +34,5 @@ __all__ = [
     "NotificationTemplate",
     "NotificationPreference",
     "AuditTrail",
+    "CompanyFacilityMap",
 ]
