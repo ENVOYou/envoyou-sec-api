@@ -2,6 +2,13 @@
 
 [Dokumen Tujuan & Fitur Kunci (Internal)](docs/GOALS.md)
 
+Dokumen pendukung:
+
+- [Metrics of Success (MVP)](docs/METRICS.md)
+- [SEC Export — Sample Outputs](docs/SEC_EXPORT_SAMPLES.md)
+- [Security Plan (Early Commitment)](docs/SECURITY_PLAN.md)
+- [Partnering Strategy (Anchor Partners)](docs/PARTNERING.md)
+
 Envoyou SEC API is a focused backend service for SEC Climate Disclosure compliance. It provides auditable greenhouse gas (GHG) calculation, validation, and report export features tailored for public companies required to submit climate disclosures.
 
 ## Key goals
