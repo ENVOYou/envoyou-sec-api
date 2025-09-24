@@ -6,7 +6,7 @@ import requests
 import json
 
 def test_free_api_key():
-    url = "http://localhost:10000/auth/request-free-api-key"
+    url = "http://localhost:8000/auth/request-free-api-key"
     data = {
         "email": "test@example.com",
         "name": "Test User",

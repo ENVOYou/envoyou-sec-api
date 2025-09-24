@@ -18,6 +18,7 @@ from .notification import (
     NotificationTemplate,
     NotificationPreference
 )
+from .audit_trail import AuditTrail
 
 # Make all models available at package level
 __all__ = [
@@ -30,5 +31,6 @@ __all__ = [
     "AirQualityData",
     "Notification",
     "NotificationTemplate",
-    "NotificationPreference"
+    "NotificationPreference",
+    "AuditTrail",
 ]
