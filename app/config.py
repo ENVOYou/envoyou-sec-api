@@ -170,6 +170,10 @@ class Settings(BaseSettings):
         else:
             return "https://sandbox-checkout.paddle.com"
 
+    # RBAC via email lists
+    ADMIN_EMAILS: str | None = None
+    INSPECTOR_EMAILS: str | None = None
+
     @model_validator(mode='after')
     def set_production_defaults(self) -> 'Settings':
         """Set production-specific defaults based on ENVIRONMENT"""
