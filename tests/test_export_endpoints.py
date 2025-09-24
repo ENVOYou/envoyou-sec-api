@@ -1,15 +1,10 @@
-import os
-from dotenv import load_dotenv
-load_dotenv()
-
 from fastapi.testclient import TestClient
 from app.api_server import app
 
-# ensure API key exists
-os.environ.setdefault("API_KEYS", "test_key:Test Client:basic")
-
 client = TestClient(app)
-headers = {"X-API-Key": "test_key"}
+# Use built-in demo key from security module defaults
+headers = {"X-API-Key": "demo_key_premium_2025"}
+
 
 def test_export_cevs_json():
     r = client.get("/v1/export/sec/cevs/Test Company", headers=headers)
