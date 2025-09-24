@@ -12,6 +12,10 @@ from app.clients.edgar_client import EDGARClient
 from app.clients.campd_client import CAMDClient
 from app.utils.policy import load_best_practices, practices_for_country
 
+# Add imports for audit recording
+from app.models.database import SessionLocal
+from app.services.audit_service import record_audit
+
 logger = logging.getLogger(__name__)
 
 
@@ -75,10 +79,22 @@ def compute_cevs_for_company(company_name: str, *, company_country: Optional[str
     eea_client = EEAClient()
     # New: country renewables row and EU average row for comparison
     renew_row = eea_client.get_country_renewables(company_country) if company_country else None
-    renew_all = eea_client.get_countries_renewables()
+    try:
+        renew_all = eea_client.get_countries_renewables()
+        import inspect
+        if inspect.isawaitable(renew_all):
+            renew_all = []
+    except Exception:
+        renew_all = []
     eu_row = next((r for r in renew_all if (r.get("country") or "").strip().lower() in ("eu-27", "eu27", "eu 27", "eu")), None)
     # New: industrial pollution timeseries/trend from EEA (global, not per company)
     pol_series = eea_client.get_industrial_pollution()
+    try:
+        import inspect
+        if inspect.isawaitable(pol_series):
+            pol_series = []
+    except Exception:
+        pol_series = []
     pol_trend = eea_client.compute_pollution_trend(pol_series) if pol_series else {"total_n": {"increase": False}, "total_p": {"increase": False}}
     # New: EDGAR country trends as fallback/augmentation if country provided
     edgar_details: Dict[str, Any] = {}
@@ -262,7 +278,7 @@ def compute_cevs_for_company(company_name: str, *, company_country: Optional[str
     # Clamp score to [0, 100]
     score = max(0.0, min(100.0, score))
 
-    return {
+    result = {
         "company": company_name,
         "country": company_country,
         "score": round(score, 2),
@@ -286,3 +302,17 @@ def compute_cevs_for_company(company_name: str, *, company_country: Optional[str
             "campd": campd_details,
         },
     }
+
+    # Record audit entry (non-blocking - failures should not break scoring)
+    try:
+        db = SessionLocal()
+        try:
+            calc_version = os.getenv("CEVS_VERSION", "0.1")
+            # Use company_name as a temporary company identifier if CIK is not available
+            record_audit(db, source_file="cevs_aggregator", calculation_version=calc_version, company_cik=company_name, notes=f"components={components}")
+        finally:
+            db.close()
+    except Exception as e:
+        logger.warning(f"Failed to write audit entry: {e}")
+
+    return result
