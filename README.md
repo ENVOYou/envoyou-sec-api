@@ -10,14 +10,23 @@ Dokumen pendukung:
 - [Partnering Strategy (Anchor Partners)](docs/PARTNERING.md)
 - [Admin Mapping (Company → Facility)](docs/ADMIN_MAPPING.md)
 
-Endpoint ringkas (baru):
+## API Endpoints
 
-- POST `/v1/validation/epa` — validasi silang EPA (flags dengan threshold)
-- POST `/v1/export/sec/package` — buat paket zip (validation.json, audit.csv) dan upload
-- Admin (premium):
-  - POST `/v1/admin/mappings` — upsert mapping
-  - GET `/v1/admin/mappings/{company}` — detail mapping
-  - GET `/v1/admin/mappings` — list mapping
+### Core Endpoints
+- POST `/v1/emissions/calculate` — calculate Scope 1 & 2 emissions with audit trail
+- POST `/v1/validation/epa` — cross-validate against EPA data with quantitative deviation
+- POST `/v1/export/sec/package` — generate complete SEC filing package (zip)
+
+### Export Endpoints
+- GET `/v1/export/sec/cevs` — export CEVS data (JSON/CSV)
+- GET `/v1/export/sec/audit` — export audit trail (CSV)
+
+### Admin Endpoints (Premium)
+- POST `/v1/admin/mappings` — create/update company-facility mapping
+- GET `/v1/admin/mappings/{company}` — get mapping details
+- GET `/v1/admin/mappings` — list all mappings
+- POST `/v1/audit` — create audit entry
+- GET `/v1/audit` — list audit entries with filters
 
 Envoyou SEC API is a focused backend service for SEC Climate Disclosure compliance. It provides auditable greenhouse gas (GHG) calculation, validation, and report export features tailored for public companies required to submit climate disclosures.
 
@@ -60,6 +69,44 @@ Envoyou SEC API is a focused backend service for SEC Climate Disclosure complian
    ```bash
    uvicorn app.api_server:app --reload --port 8000
    ```
+
+## Quick Example
+
+Calculate emissions and generate SEC package:
+
+```bash
+# 1. Calculate emissions
+curl -X POST "http://localhost:8000/v1/emissions/calculate" \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: your-api-key" \
+  -d '{
+    "company": "Demo Corp",
+    "scope1": {"fuel_type": "natural_gas", "amount": 1000, "unit": "mmbtu"},
+    "scope2": {"kwh": 500000, "grid_region": "RFC"}
+  }'
+
+# 2. Validate against EPA
+curl -X POST "http://localhost:8000/v1/validation/epa" \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: your-api-key" \
+  -d '{
+    "company": "Demo Corp",
+    "scope1": {"fuel_type": "natural_gas", "amount": 1000, "unit": "mmbtu"},
+    "scope2": {"kwh": 500000, "grid_region": "RFC"}
+  }'
+
+# 3. Generate SEC package
+curl -X POST "http://localhost:8000/v1/export/sec/package" \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: your-api-key" \
+  -d '{
+    "company": "Demo Corp",
+    "scope1": {"fuel_type": "natural_gas", "amount": 1000, "unit": "mmbtu"},
+    "scope2": {"kwh": 500000, "grid_region": "RFC"}
+  }'
+```
+
+See [E2E Demo](docs/E2E_DEMO.md) for complete workflow examples.
 
 ## Tests
 

@@ -178,6 +178,11 @@ class Settings(BaseSettings):
     VALIDATION_MIN_MATCHES: int = 1
     VALIDATION_LOW_DENSITY_THRESHOLD: int = 3
     VALIDATION_REQUIRE_STATE_MATCH: bool = False
+    
+    # Quantitative deviation thresholds (percentage)
+    VALIDATION_CO2_DEVIATION_THRESHOLD: float = 15.0
+    VALIDATION_NOX_DEVIATION_THRESHOLD: float = 20.0
+    VALIDATION_SO2_DEVIATION_THRESHOLD: float = 25.0
 
     @model_validator(mode='after')
     def set_production_defaults(self) -> 'Settings':
