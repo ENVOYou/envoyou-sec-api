@@ -1,0 +1,194 @@
+{
+  "info": {
+    "name": "Envoyou SEC API",
+    "description": "Complete endpoint testing for Envoyou SEC Compliance API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8000",
+      "type": "string"
+    },
+    {
+      "key": "apiKey",
+      "value": "demo_key",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Health Check",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/health",
+          "host": ["{{baseUrl}}"],
+          "path": ["health"]
+        }
+      }
+    },
+    {
+      "name": "Emissions - Calculate",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "X-API-Key",
+            "value": "{{apiKey}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"company\": \"Demo Corp\",\n  \"scope1\": {\n    \"fuel_type\": \"natural_gas\",\n    \"amount\": 1000,\n    \"unit\": \"mmbtu\"\n  },\n  \"scope2\": {\n    \"kwh\": 500000,\n    \"grid_region\": \"US_default\"\n  }\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/v1/emissions/calculate",
+          "host": ["{{baseUrl}}"],
+          "path": ["v1", "emissions", "calculate"]
+        }
+      }
+    },
+    {
+      "name": "Emissions - Get Factors",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "X-API-Key",
+            "value": "{{apiKey}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/v1/emissions/factors",
+          "host": ["{{baseUrl}}"],
+          "path": ["v1", "emissions", "factors"]
+        }
+      }
+    },
+    {
+      "name": "Emissions - Get Units",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "X-API-Key",
+            "value": "{{apiKey}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/v1/emissions/units",
+          "host": ["{{baseUrl}}"],
+          "path": ["v1", "emissions", "units"]
+        }
+      }
+    },
+    {
+      "name": "Validation - EPA Cross-Validate",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "X-API-Key",
+            "value": "{{apiKey}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"company\": \"Demo Corp\",\n  \"scope1\": {\n    \"fuel_type\": \"natural_gas\",\n    \"amount\": 1000,\n    \"unit\": \"mmbtu\"\n  },\n  \"scope2\": {\n    \"kwh\": 500000,\n    \"grid_region\": \"US_default\"\n  }\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/v1/validation/epa",
+          "host": ["{{baseUrl}}"],
+          "path": ["v1", "validation", "epa"]
+        }
+      }
+    },
+    {
+      "name": "Export - SEC CEVS (JSON)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "X-API-Key",
+            "value": "{{apiKey}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/v1/export/sec/cevs?format=json&company=Demo Corp",
+          "host": ["{{baseUrl}}"],
+          "path": ["v1", "export", "sec", "cevs"],
+          "query": [
+            {
+              "key": "format",
+              "value": "json"
+            },
+            {
+              "key": "company",
+              "value": "Demo Corp"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Export - SEC Package",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "X-API-Key",
+            "value": "{{apiKey}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"company\": \"Demo Corp\",\n  \"scope1\": {\n    \"fuel_type\": \"natural_gas\",\n    \"amount\": 1000,\n    \"unit\": \"mmbtu\"\n  },\n  \"scope2\": {\n    \"kwh\": 500000,\n    \"grid_region\": \"US_default\"\n  }\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/v1/export/sec/package",
+          "host": ["{{baseUrl}}"],
+          "path": ["v1", "export", "sec", "package"]
+        }
+      }
+    },
+    {
+      "name": "Admin - Create Mapping",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "X-API-Key",
+            "value": "{{apiKey}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"company\": \"Demo Corp\",\n  \"facility_id\": \"12345\",\n  \"facility_name\": \"Demo Facility\",\n  \"state\": \"TX\",\n  \"notes\": \"Test mapping for demo\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/v1/admin/mappings",
+          "host": ["{{baseUrl}}"],
+          "path": ["v1", "admin", "mappings"]
+        }
+      }
+    }
+  ]
+}
