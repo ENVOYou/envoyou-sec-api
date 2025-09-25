@@ -1,12 +1,22 @@
 import pytest
+from unittest.mock import patch
 from fastapi.testclient import TestClient
 from app.api_server import app
 
 client = TestClient(app)
 
+@pytest.fixture(autouse=True)
+def mock_api_key_validation():
+    """Mock API key validation for tests."""
+    with patch('app.utils.security.validate_api_key') as mock_validate:
+        mock_validate.return_value = {"app_name": "Test App", "tier": "basic"}
+        yield mock_validate
+
 def test_get_emission_factors():
     """Test getting emission factors."""
-    response = client.get("/v1/emissions/factors", headers={"X-API-Key": "demo_key"})
+    response = client.get("/v1/emissions/factors", headers={"X-API-Key": "test_key"})
+    
+    assert response.status_code == 200
     
     assert response.status_code == 200
     data = response.json()
@@ -23,7 +33,9 @@ def test_get_emission_factors():
 
 def test_get_supported_units():
     """Test getting supported units."""
-    response = client.get("/v1/emissions/units", headers={"X-API-Key": "demo_key"})
+    response = client.get("/v1/emissions/units", headers={"X-API-Key": "test_key"})
+    
+    assert response.status_code == 200
     
     assert response.status_code == 200
     data = response.json()
