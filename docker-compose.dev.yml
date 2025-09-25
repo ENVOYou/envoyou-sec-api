@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  envoyou-postgres:
+    image: postgres:16
+    container_name: envoyou-postgres
+    environment:
+      POSTGRES_DB: envoyou
+      POSTGRES_USER: envoyou
+      POSTGRES_PASSWORD: envoyou123
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U envoyou -d envoyou"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  envoyou-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: envoyou-api
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://envoyou:envoyou123@envoyou-postgres:5432/envoyou
+      - ENVIRONMENT=development
+    volumes:
+      - .:/app
+      - ./uploads:/app/uploads
+    depends_on:
+      envoyou-postgres:
+        condition: service_healthy
+    command: uvicorn app.api_server:app --host 0.0.0.0 --port 8000 --reload
+
+volumes:
+  postgres_data:

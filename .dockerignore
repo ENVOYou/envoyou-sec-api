@@ -1,31 +1,36 @@
-# Docker ignore patterns
-
-# Environment files
-.env
-.env.local
-.env.*.local
+# Git
+.git
+.gitignore
 
 # Python
-__pycache__/
-*.py[cod]
-*$py.class
-*.so
+__pycache__
+*.pyc
+*.pyo
+*.pyd
 .Python
-env/
+env
+pip-log.txt
+pip-delete-this-directory.txt
+.tox
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.log
+.git
+.mypy_cache
+.pytest_cache
+.hypothesis
+
+# Virtual environments
 venv/
 ENV/
-env.bak/
-venv.bak/
+env/
 .venv/
 
-# Testing
-.pytest_cache/
-.coverage
-htmlcov/
-.tox/
-.nox/
-
-# IDE
+# IDEs
 .vscode/
 .idea/
 *.swp
@@ -41,39 +46,18 @@ htmlcov/
 ehthumbs.db
 Thumbs.db
 
-# Git
-.git/
-.gitignore
+# Project specific
+*.db
+test.db
+app.db
+uploads/
+logs/
+.env.local
+.env.production
+node_modules/
 
-# Docker
-Dockerfile*
-docker-compose*
+# Development
+docker-compose.override.yml
 .dockerignore
-
-# Documentation drafts
-*.draft.md
-
-# Logs (but keep logs directory)
-logs/*.log
-logs/*.txt
-
-# Temporary files
-*.tmp
-*.temp
-
-# Archive and backup files
-archive/
-backup/
-*.bak
-
-# Large data files (keep structure but not actual files)
-data/*.csv
-data/*.json
-data/*.xlsx
-output/*.csv
-output/*.json
-output/*.xlsx
-
-# But keep example/reference files
-!reference/
-!data/README.md
+README.md
+docs/
