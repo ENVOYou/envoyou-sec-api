@@ -124,17 +124,13 @@
           }
         ],
         "url": {
-          "raw": "{{baseUrl}}/v1/export/sec/cevs?format=json&company=Demo Corp",
+          "raw": "{{baseUrl}}/v1/export/sec/cevs/DemoCorp?format=json",
           "host": ["{{baseUrl}}"],
-          "path": ["v1", "export", "sec", "cevs"],
+          "path": ["v1", "export", "sec", "cevs", "DemoCorp"],
           "query": [
             {
               "key": "format",
               "value": "json"
-            },
-            {
-              "key": "company",
-              "value": "Demo Corp"
             }
           ]
         }
