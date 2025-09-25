@@ -27,9 +27,10 @@ WORKDIR /app
 # Create non-root user for security
 RUN useradd --create-home --shell /bin/bash appuser
 
-# Install runtime dependencies
+# Install runtime dependencies including PostgreSQL client
 RUN apt-get update && apt-get install -y \
     curl \
+    postgresql-client \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy Python packages from builder stage
