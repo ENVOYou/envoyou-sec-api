@@ -55,6 +55,16 @@ def verify_token(token: str, token_type: str = "access"):
     except jwt.InvalidTokenError:
         return None
 
+def decode_jwt_token(token: str) -> Optional[dict]:
+    """Decode JWT token and return payload."""
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        return payload
+    except jwt.ExpiredSignatureError:
+        return None
+    except jwt.InvalidTokenError:
+        return None
+
 def get_token_expiration(token: str):
     """Get token expiration time"""
     try:

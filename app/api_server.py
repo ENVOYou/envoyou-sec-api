@@ -101,6 +101,7 @@ from app.routes.export import router as export_router
 from app.routes.emissions import router as emissions_router
 from app.routes.validation import router as validation_router
 from app.routes.admin_mapping import router as admin_mapping_router
+from app.routes.emissions_factors import router as emissions_factors_router
 
 # Import security utilities
 from app.utils.security import is_public_endpoint, validate_api_key, rate_limit_dependency_factory
@@ -242,6 +243,7 @@ app.include_router(cloudflare_router, prefix="/cloudflare")
 app.include_router(audit_trail_router, prefix="/v1/audit")
 app.include_router(export_router, prefix="/v1/export")
 app.include_router(emissions_router, prefix="/v1/emissions")
+app.include_router(emissions_factors_router, prefix="/v1/emissions")
 app.include_router(validation_router, prefix="/v1/validation")
 app.include_router(admin_mapping_router, prefix="/v1/admin")
 
