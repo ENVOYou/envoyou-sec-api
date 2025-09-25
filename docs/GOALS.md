@@ -45,3 +45,5 @@ Dokumen ringkas ini menjadi rujukan internal agar fokus proyek tidak melebar.
 - Ekspor JSON/CSV untuk 10‑K
 - Autentikasi & RBAC untuk audit endpoints
 - Alembic migration siap deploy (backup/rollback)
+
+>[Envoyou SEC API](https://github.com/ENVOYou/envoyou-sec-api)
