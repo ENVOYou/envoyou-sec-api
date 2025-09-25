@@ -1,9 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 from typing import Optional, Any
+from sqlalchemy.orm import Session
 
 from app.utils.security import require_api_key
 from app.services.validation_service import cross_validate_epa
+from app.models.database import get_db
 
 router = APIRouter()
 
@@ -23,9 +25,9 @@ class ValidatePayload(BaseModel):
 
 
 @router.post("/epa")
-async def validate_epa(payload: ValidatePayload, state: Optional[str] = Query(None), year: Optional[int] = Query(None), api_key: Any = Depends(require_api_key)):
+async def validate_epa(payload: ValidatePayload, state: Optional[str] = Query(None), year: Optional[int] = Query(None), db: Session = Depends(get_db), api_key: Any = Depends(require_api_key)):
     try:
-        result = cross_validate_epa(payload.model_dump(), state=state, year=year)
+        result = cross_validate_epa(payload.model_dump(), db=db, state=state, year=year)
         return {"status": "success", **result}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
