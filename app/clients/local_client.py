@@ -28,7 +28,7 @@ class KLHKClient:
         
     def test_connection(self):
         """
-        Test koneksi ke API KLHK dengan berbagai endpoint dan parameter
+        Test connection to KLHK API with various endpoints and parameters
         """
         endpoints_to_try = [
             ("/StatusSK", {'plain': 'false'}),
@@ -115,7 +115,7 @@ class KLHKClient:
     
     def search_permits_by_company(self, company_name: str, data: List[Dict]) -> List[Dict]:
         """
-        Mencari izin berdasarkan nama perusahaan
+        Search permits by company name
         """
         if not data or not isinstance(data, list):
             return []
@@ -125,7 +125,7 @@ class KLHKClient:
         
         for record in data:
             if isinstance(record, dict):
-                # Cari di berbagai field yang mungkin berisi nama perusahaan
+                # Search in various fields that might contain company name
                 company_fields = ['nama_perusahaan', 'perusahaan', 'nama', 'pemohon', 'company_name']
                 
                 for field in company_fields:
@@ -149,7 +149,7 @@ class KLHKClient:
         
         for record in data:
             if isinstance(record, dict):
-                # Cek berbagai field yang mungkin menunjukkan status atau tanggal berlaku
+                # Check various fields that might indicate status or validity date
                 status_fields = ['status', 'berlaku', 'tanggal_berlaku', 'expired_date']
                 is_active = True
                 
