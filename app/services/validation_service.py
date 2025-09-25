@@ -1,9 +1,13 @@
 from __future__ import annotations
 
 from typing import Any, Dict, List, Optional
+from sqlalchemy.orm import Session
 
 from app.clients.global_client import EPAClient
+from app.clients.campd_client import CAMDClient
+# from app.clients.eia_client import EIAClient  # Skip EIA for now
 from app.services.emissions_calculator import calculate_emissions
+from app.repositories.company_map_repository import get_mapping
 from app.config import settings
 
 
@@ -17,7 +21,94 @@ def _search_matches(company: str, epa_data: List[Dict[str, Any]]) -> List[Dict[s
     return out
 
 
-def cross_validate_epa(payload: Dict[str, Any], *, state: Optional[str] = None, year: Optional[int] = None, sample_limit: int = 5) -> Dict[str, Any]:
+def _check_quantitative_deviation(payload: Dict[str, Any], mapping, year: Optional[int] = None) -> Optional[Dict[str, Any]]:
+    """Check quantitative deviation using CAMPD/EIA data for mapped facility."""
+    facility_id = mapping.facility_id
+    if not facility_id:
+        return None
+    
+    # Get thresholds from settings
+    co2_threshold = float(getattr(settings, "VALIDATION_CO2_DEVIATION_THRESHOLD", 15.0))
+    nox_threshold = float(getattr(settings, "VALIDATION_NOX_DEVIATION_THRESHOLD", 20.0))
+    so2_threshold = float(getattr(settings, "VALIDATION_SO2_DEVIATION_THRESHOLD", 25.0))
+    
+    deviations = []
+    
+    try:
+        # Try CAMPD for power plants
+        campd = CAMDClient()
+        campd_data = campd.get_emissions_data(facility_id=facility_id, year=year or 2023)
+        
+        if campd_data:
+            # Check CO2 deviation
+            reported_co2 = _extract_co2_from_payload(payload)
+            campd_co2 = _extract_co2_from_campd(campd_data)
+            
+            if reported_co2 and campd_co2:
+                deviation_pct = abs(reported_co2 - campd_co2) / campd_co2 * 100
+                severity = "critical" if deviation_pct > co2_threshold * 2 else "high" if deviation_pct > co2_threshold else "medium"
+                
+                deviations.append({
+                    "pollutant": "CO2",
+                    "reported": reported_co2,
+                    "reference": campd_co2,
+                    "deviation_pct": deviation_pct,
+                    "threshold": co2_threshold,
+                    "severity": severity,
+                    "source": "CAMPD"
+                })
+    
+    except Exception:
+        # EIA fallback temporarily disabled (async client needs refactoring)
+        pass
+    
+    if not deviations:
+        return None
+    
+    return {
+        "facility_id": facility_id,
+        "year": year or 2023,
+        "deviations": deviations,
+        "thresholds": {
+            "co2": co2_threshold,
+            "nox": nox_threshold,
+            "so2": so2_threshold
+        }
+    }
+
+
+def _extract_co2_from_payload(payload: Dict[str, Any]) -> Optional[float]:
+    """Extract CO2 emissions from calculated emissions result."""
+    try:
+        calc = calculate_emissions(payload)
+        total_kg = calc.get("totals", {}).get("emissions_kg", 0.0)
+        # Convert kg to tonnes for comparison with external data
+        return total_kg / 1000.0 if total_kg > 0 else None
+    except Exception:
+        return None
+
+
+def _extract_co2_from_campd(campd_data: List[Dict[str, Any]]) -> Optional[float]:
+    """Extract CO2 from CAMPD data."""
+    total = 0.0
+    for record in campd_data:
+        co2 = record.get("co2_mass_tons") or record.get("co2_emissions")
+        if co2:
+            total += float(co2)
+    return total if total > 0 else None
+
+
+def _extract_co2_from_eia(eia_data: List[Dict[str, Any]]) -> Optional[float]:
+    """Extract CO2 from EIA data."""
+    total = 0.0
+    for record in eia_data:
+        co2 = record.get("co2_emissions") or record.get("carbon_dioxide")
+        if co2:
+            total += float(co2)
+    return total if total > 0 else None
+
+
+def cross_validate_epa(payload: Dict[str, Any], *, db: Optional[Session] = None, state: Optional[str] = None, year: Optional[int] = None, sample_limit: int = 5) -> Dict[str, Any]:
     """Cross-validate calculated emissions against EPA Envirofacts presence.
 
     Thresholds (configurable via env):
@@ -38,6 +129,14 @@ def cross_validate_epa(payload: Dict[str, Any], *, state: Optional[str] = None, 
     norm = client.format_emission_data(raw)
 
     matches = _search_matches(company, norm)
+    
+    # Check for manual mapping
+    mapping = None
+    quantitative_deviation = None
+    if db:
+        mapping = get_mapping(db, company)
+        if mapping:
+            quantitative_deviation = _check_quantitative_deviation(payload, mapping, year)
 
     min_matches = int(getattr(settings, "VALIDATION_MIN_MATCHES", 1) or 1)
     low_density = int(getattr(settings, "VALIDATION_LOW_DENSITY_THRESHOLD", 3) or 3)
@@ -88,7 +187,7 @@ def cross_validate_epa(payload: Dict[str, Any], *, state: Optional[str] = None, 
     if state and state_mismatch:
         suggestions.append("Periksa state operasional pada input atau gunakan state lain untuk validasi.")
 
-    return {
+    result = {
         "company": company,
         "inputs": {
             "scope1": payload.get("scope1"),
@@ -109,3 +208,26 @@ def cross_validate_epa(payload: Dict[str, Any], *, state: Optional[str] = None, 
         "notes": "EPA TRI tidak memuat angka emisi; heuristik ini memeriksa keberadaan & kepadatan kecocokan.",
         "suggestions": suggestions,
     }
+    
+    # Add mapping and quantitative data if available
+    if mapping:
+        result["mapping"] = {
+            "facility_id": mapping.facility_id,
+            "facility_name": mapping.facility_name,
+            "state": mapping.state,
+            "notes": mapping.notes
+        }
+    
+    if quantitative_deviation:
+        result["quantitative_deviation"] = quantitative_deviation
+        # Add deviation flags
+        for dev in quantitative_deviation.get("deviations", []):
+            if dev["severity"] in ["high", "critical"]:
+                flags.append({
+                    "code": "quantitative_deviation",
+                    "severity": dev["severity"],
+                    "message": f"Deviasi signifikan pada {dev['pollutant']}: {dev['deviation_pct']:.1f}%",
+                    "details": dev
+                })
+    
+    return result
