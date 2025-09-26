@@ -86,6 +86,82 @@ class UserStatsResponse(BaseModel):
     last_activity: Optional[str]
 
 
+# New models for missing endpoints
+class CalculationResponse(BaseModel):
+    id: str
+    company: str
+    calculation_data: dict
+    result: dict
+    version: str
+    created_at: str
+
+
+class CalculationListResponse(BaseModel):
+    calculations: List[CalculationResponse]
+    total: int
+    page: int
+    limit: int
+
+
+class PackageResponse(BaseModel):
+    id: str
+    company: str
+    package_data: dict
+    file_url: Optional[str]
+    file_size: Optional[int]
+    created_at: str
+
+
+class PackageListResponse(BaseModel):
+    packages: List[PackageResponse]
+    total: int
+    page: int
+    limit: int
+
+
+class NotificationResponse(BaseModel):
+    id: str
+    title: str
+    message: str
+    type: str
+    read: bool
+    created_at: str
+
+
+class NotificationListResponse(BaseModel):
+    notifications: List[NotificationResponse]
+    unread_count: int
+
+
+class UserPreferencesResponse(BaseModel):
+    units: str = "metric"
+    timezone: str = "UTC"
+    email_notifications: bool = True
+    default_company: Optional[str] = None
+    default_grid_region: str = "US_default"
+
+
+class UserPreferencesUpdate(BaseModel):
+    units: Optional[str] = None
+    timezone: Optional[str] = None
+    email_notifications: Optional[bool] = None
+    default_company: Optional[str] = None
+    default_grid_region: Optional[str] = None
+
+
+class ActivityResponse(BaseModel):
+    id: str
+    action: str
+    description: str
+    metadata: Optional[dict]
+    created_at: str
+
+
+class ActivityListResponse(BaseModel):
+    activities: List[ActivityResponse]
+    total: int
+
+
 async def get_db_user(
     supa_user: SupabaseUser = Depends(get_supabase_user),
     db: Session = Depends(get_db)
