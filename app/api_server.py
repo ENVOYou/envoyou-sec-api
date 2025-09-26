@@ -263,6 +263,9 @@ async def home():
             '/auth/login': 'User authentication (Supabase)',
             '/auth/register': 'User registration (Supabase)',
             '/user/profile': 'User profile management',
+            '/user/api-keys': 'API key management',
+            '/user/api-token': 'Personal API token',
+            '/user/sessions': 'Session management',
             '/v1/emissions/calculate': 'Calculate Scope 1 & 2 emissions',
             '/v1/emissions/factors': 'Get emission factors',
             '/v1/emissions/units': 'Get supported units',
@@ -301,7 +304,7 @@ async def not_found(request: Request, exc):
             'message': 'Endpoint not found',
             'available_endpoints': [
                 '/', '/health',
-                '/auth/login', '/auth/register', '/user/profile',
+                '/auth/login', '/auth/register', '/user/profile', '/user/api-keys', '/user/sessions',
                 '/v1/emissions/calculate', '/v1/emissions/factors', '/v1/emissions/units',
                 '/v1/validation/epa',
                 '/v1/export/sec/cevs/{company}', '/v1/export/sec/package',
