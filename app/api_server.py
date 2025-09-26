@@ -92,6 +92,7 @@ from app.routes.emissions import router as emissions_router
 from app.routes.validation import router as validation_router
 from app.routes.admin_mapping import router as admin_mapping_router
 from app.routes.emissions_factors import router as emissions_factors_router
+from app.routes.user_extended import router as user_extended_router
 
 # Import security utilities
 from app.utils.security import is_public_endpoint, validate_api_key, rate_limit_dependency_factory
@@ -232,6 +233,7 @@ app.include_router(emissions_router, prefix="/v1/emissions")
 app.include_router(emissions_factors_router, prefix="/v1/emissions")
 app.include_router(validation_router, prefix="/v1/validation")
 app.include_router(admin_mapping_router, prefix="/v1/admin")
+app.include_router(user_extended_router, prefix="/user")
 
 # Legacy endpoints (disabled for SEC API focus)
 # app.include_router(permits_router, prefix="/permits")
@@ -254,8 +256,11 @@ async def home():
             '/auth/register': 'User registration (Supabase)',
             '/user/profile': 'User profile management',
             '/user/api-keys': 'API key management',
-            '/user/api-token': 'Personal API token',
-            '/user/sessions': 'Session management',
+            '/user/calculations': 'Calculation history',
+            '/user/packages': 'SEC package management',
+            '/user/notifications': 'User notifications',
+            '/user/preferences': 'User preferences',
+            '/user/activity': 'Activity log',
             '/v1/emissions/calculate': 'Calculate Scope 1 & 2 emissions',
             '/v1/emissions/factors': 'Get emission factors',
             '/v1/emissions/units': 'Get supported units',
@@ -294,7 +299,8 @@ async def not_found(request: Request, exc):
             'message': 'Endpoint not found',
             'available_endpoints': [
                 '/', '/health',
-                '/auth/login', '/auth/register', '/user/profile', '/user/api-keys', '/user/sessions',
+                '/auth/login', '/auth/register', '/user/profile', '/user/api-keys',
+                '/user/calculations', '/user/packages', '/user/notifications', '/user/preferences', '/user/activity',
                 '/v1/emissions/calculate', '/v1/emissions/factors', '/v1/emissions/units',
                 '/v1/validation/epa',
                 '/v1/export/sec/cevs/{company}', '/v1/export/sec/package',
