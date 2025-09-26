@@ -47,7 +47,7 @@ def ensure_iso_cert_schema(data: Dict[str, Any]) -> Dict[str, Any]:
         Dict[str, Any]: Normalized record.
     """
     normalized = {
-        "nama_perusahaan": data.get("company") or data.get("nama_perusahaan") or "Unknown Company",
+        "company_name": data.get("company") or data.get("company_name") or data.get("nama_perusahaan") or "Unknown Company",
         "country": data.get("country") or None,
         "certificate": data.get("certificate") or "ISO 14001",
         "valid_until": data.get("valid_until") or None,

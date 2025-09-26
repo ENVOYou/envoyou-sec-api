@@ -149,14 +149,14 @@ def cross_validate_epa(payload: Dict[str, Any], *, db: Optional[Session] = None,
         flags.append({
             "code": "no_epa_match",
             "severity": "high",
-            "message": "Tidak ditemukan fasilitas yang cocok di EPA untuk nama perusahaan ini.",
+            "message": "No matching facilities found in EPA for this company name.",
             "details": {"matches_count": len(matches), "min_required": min_matches}
         })
     elif len(matches) < low_density:
         flags.append({
             "code": "low_match_density",
             "severity": "medium",
-            "message": "Jumlah kecocokan EPA rendah dibanding ekspektasi.",
+            "message": "Low EPA match density compared to expectations.",
             "details": {"matches_count": len(matches), "threshold": low_density}
         })
 
@@ -169,23 +169,23 @@ def cross_validate_epa(payload: Dict[str, Any], *, db: Optional[Session] = None,
             flags.append({
                 "code": "state_mismatch",
                 "severity": "medium" if not require_state else "high",
-                "message": "Tidak ada match EPA dalam state yang ditentukan.",
+                "message": "No EPA matches found in the specified state.",
                 "details": {"requested_state": state, "matches_count": len(matches)}
             })
         elif require_state and len(same_state) == 0:
             flags.append({
                 "code": "state_required_no_match",
                 "severity": "high",
-                "message": "Validasi mewajibkan kecocokan state namun tidak ditemukan.",
+                "message": "State match required for validation but none found.",
                 "details": {"requested_state": state}
             })
 
     # Suggestions minimal
     suggestions: List[str] = []
     if any(f["code"] == "no_epa_match" for f in flags):
-        suggestions.append("Periksa ejaan nama perusahaan atau gunakan alias legal name.")
+        suggestions.append("Check company name spelling or use legal name alias.")
     if state and state_mismatch:
-        suggestions.append("Periksa state operasional pada input atau gunakan state lain untuk validasi.")
+        suggestions.append("Check operational state in input or use different state for validation.")
 
     result = {
         "company": company,
@@ -205,7 +205,7 @@ def cross_validate_epa(payload: Dict[str, Any], *, db: Optional[Session] = None,
             "low_density_threshold": low_density,
             "require_state_match": require_state,
         },
-        "notes": "EPA TRI tidak memuat angka emisi; heuristik ini memeriksa keberadaan & kepadatan kecocokan.",
+        "notes": "EPA TRI does not contain emission numbers; this heuristic checks facility presence and match density.",
         "suggestions": suggestions,
     }
     
@@ -226,7 +226,7 @@ def cross_validate_epa(payload: Dict[str, Any], *, db: Optional[Session] = None,
                 flags.append({
                     "code": "quantitative_deviation",
                     "severity": dev["severity"],
-                    "message": f"Deviasi signifikan pada {dev['pollutant']}: {dev['deviation_pct']:.1f}%",
+                    "message": f"Significant deviation in {dev['pollutant']}: {dev['deviation_pct']:.1f}%",
                     "details": dev
                 })
     

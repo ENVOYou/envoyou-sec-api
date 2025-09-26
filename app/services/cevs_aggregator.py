@@ -73,7 +73,7 @@ def compute_cevs_for_company(company_name: str, *, company_country: Optional[str
     # ISO: sample-backed; filter by country if provided, and by company name contains
     iso_client = ISOClient()
     iso_norm = iso_client.get_iso14001_certifications(country=company_country, limit=100)
-    has_iso = any(_normalize_name(r.get("nama_perusahaan")) and company_key in _normalize_name(r.get("nama_perusahaan")) for r in iso_norm)
+    has_iso = any(_normalize_name(r.get("company_name")) and company_key in _normalize_name(r.get("company_name")) for r in iso_norm)
 
     # EEA: use new Parquet-based datasets (renewables and industrial pollution)
     eea_client = EEAClient()
