@@ -1,7 +1,7 @@
 import os
 import jwt
 from fastapi.testclient import TestClient
-from app.main import app
+from app.api_server import app
 from app.config import settings
 
 def make_internal_token(sub: str = "test-user-id", email: str = "test@example.com"):
