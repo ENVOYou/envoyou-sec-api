@@ -61,14 +61,14 @@ async def lifespan(app: FastAPI):
     pass
 
 app = FastAPI(
-    title="Environmental Data Verification API",
-    description="Production API for environmental data verification and compliance checking with multi-source data integration",
+    title="Envoyou SEC Compliance API",
+    description="SEC Climate Disclosure compliance API with auditable emissions calculation and EPA validation",
     version="1.0.0",
     contact={
             "name": "API Support",
             "email": "support@envoyou.com"
     },
-    terms_of_service="https://j8w3vpxvpb.ap-southeast-2.awsapprunner.com/terms",
+    terms_of_service="https://envoyou.com/terms",
     lifespan=lifespan
 )
 
@@ -228,18 +228,10 @@ def custom_openapi():
 
 app.openapi = custom_openapi
 
-# Register routers
+# Register routers - SEC API focused
 app.include_router(health_router, prefix="/health")
-app.include_router(permits_router, prefix="/permits")
-# Terapkan dependensi API key dan rate limiting ke semua rute global
-rate_limiter = rate_limit_dependency_factory()
-app.include_router(global_router, prefix="/global", dependencies=[Depends(api_key_dependency), Depends(rate_limiter)])
-app.include_router(admin_router, prefix="/admin")
-app.include_router(auth_router, prefix="/auth")
-app.include_router(supabase_auth_router, prefix="/auth")
-app.include_router(user_router, prefix="/user")
-app.include_router(cloudflare_router, prefix="/cloudflare")
-# New v1 routers
+
+# Core SEC API endpoints
 app.include_router(audit_trail_router, prefix="/v1/audit")
 app.include_router(export_router, prefix="/v1/export")
 app.include_router(emissions_router, prefix="/v1/emissions")
@@ -247,45 +239,44 @@ app.include_router(emissions_factors_router, prefix="/v1/emissions")
 app.include_router(validation_router, prefix="/v1/validation")
 app.include_router(admin_mapping_router, prefix="/v1/admin")
 
+# Legacy endpoints (disabled for SEC API focus)
+# app.include_router(permits_router, prefix="/permits")
+# app.include_router(global_router, prefix="/global", dependencies=[Depends(api_key_dependency), Depends(rate_limiter)])
+# app.include_router(admin_router, prefix="/admin")
+# app.include_router(auth_router, prefix="/auth")
+# app.include_router(supabase_auth_router, prefix="/auth")
+# app.include_router(user_router, prefix="/user")
+# app.include_router(cloudflare_router, prefix="/cloudflare")
+
 @app.get("/", tags=["Health"])
 async def home():
     api_info = {
-        'name': 'Environmental Data Verification API',
+        'name': 'Envoyou SEC Compliance API',
         'version': '1.0.0',
-        'description': 'Production API for environmental data verification and compliance checking with multi-source data integration',
+        'description': 'SEC Climate Disclosure compliance API with auditable emissions calculation and EPA validation',
+        'focus': 'SEC Climate Disclosure (Scope 1 & 2)',
         'endpoints': {
             '/': 'API information',
             '/health': 'Health check',
-            '/permits': 'Get all permits',
-            '/permits/search': 'Search permits by company name',
-            '/permits/active': 'Get active permits only',
-            '/permits/company/<company_name>': 'Get permits for specific company',
-            '/permits/type/<permit_type>': 'Get permits by type',
-            '/global/emissions': 'EPA emissions (filters: state, year, pollutant, page, limit)',
-            '/global/emissions/stats': 'EPA emissions statistics',
-            '/global/iso': 'ISO 14001 certifications (filters: country, limit)',
-            '/global/eea': 'EEA indicators (filters: country, indicator, year, limit)',
-            '/global/cevs/<company_name>': 'Compute CEVS score for a company (filters: country)',
-            '/global/edgar': 'EDGAR series+trend (params: country, pollutant=PM2.5, window=3)',
-            '/cloudflare/zones': 'Get Cloudflare zones (admin only)',
-            '/cloudflare/dns': 'DNS record management (admin only)',
-            '/cloudflare/security': 'Security settings management (admin only)',
-            '/cloudflare/analytics': 'Zone analytics data (admin only)'
+            '/v1/emissions/calculate': 'Calculate Scope 1 & 2 emissions',
+            '/v1/emissions/factors': 'Get emission factors',
+            '/v1/emissions/units': 'Get supported units',
+            '/v1/validation/epa': 'EPA cross-validation',
+            '/v1/export/sec/cevs/{company}': 'Export CEVS data',
+            '/v1/export/sec/package': 'Generate SEC filing package',
+            '/v1/admin/mappings': 'Company-facility mapping (admin)',
+            '/v1/audit': 'Audit trail management (admin)'
         },
         'usage_examples': {
-            'get_all_permits': '/permits',
-            'search_company': '/permits/search?nama=PT%20Pertamina',
-            'get_active_permits': '/permits/active',
-            'company_specific': '/permits/company/PT%20Semen%20Indonesia',
-            'by_permit_type': '/permits/type/Izin%20Lingkungan',
-            'epa_emissions': '/global/emissions?state=TX&year=2023&pollutant=CO2',
-            'iso_cert': '/global/iso?country=DE&limit=5',
-            'eea_indicator': '/global/eea?country=SE&indicator=GHG&year=2023&limit=5',
-            'cevs_company': '/global/cevs/Green%20Energy%20Co?country=US',
-            'cloudflare_zones': '/cloudflare/zones',
-            'cloudflare_dns': '/cloudflare/dns?zone_id=zone123',
-            'cloudflare_security': '/cloudflare/security?zone_id=zone123',
-            'cloudflare_analytics': '/cloudflare/analytics?zone_id=zone123&since=1h'
+            'calculate_emissions': '/v1/emissions/calculate',
+            'get_factors': '/v1/emissions/factors',
+            'epa_validation': '/v1/validation/epa',
+            'sec_export': '/v1/export/sec/package',
+            'audit_trail': '/v1/audit'
+        },
+        'authentication': {
+            'api_key': 'X-API-Key header required for most endpoints',
+            'demo_key': 'demo_key (for testing)'
         }
     }
     return api_info
@@ -298,11 +289,11 @@ async def not_found(request: Request, exc):
         'status': 'error',
             'message': 'Endpoint not found',
             'available_endpoints': [
-                '/', '/health', '/permits', '/permits/search', '/permits/active',
-                '/permits/company/<company_name>', '/permits/type/<permit_type>',
-                '/permits/stats', '/global/emissions', '/global/emissions/stats',
-                '/global/iso', '/global/eea', '/global/cevs/<company_name>', '/global/edgar',
-                '/cloudflare/zones', '/cloudflare/dns', '/cloudflare/security', '/cloudflare/analytics'
+                '/', '/health',
+                '/v1/emissions/calculate', '/v1/emissions/factors', '/v1/emissions/units',
+                '/v1/validation/epa',
+                '/v1/export/sec/cevs/{company}', '/v1/export/sec/package',
+                '/v1/admin/mappings', '/v1/audit'
             ]
         }
     )
