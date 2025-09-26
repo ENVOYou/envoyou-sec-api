@@ -7,12 +7,14 @@ This document outlines the migration from the original CEVS (Composite Environme
 ## Background
 
 **Original CEVS Project:**
+
 - Multi-source environmental data aggregation
 - Composite scoring from EPA, EEA, EDGAR, ISO, Amdalnet
 - Broad environmental performance metrics
 - Target market: General environmental compliance
 
 **New SEC API Focus:**
+
 - SEC Climate Disclosure compliance (Scope 1 & 2)
 - Auditable emissions calculation
 - EPA validation for anomaly detection
@@ -23,16 +25,19 @@ This document outlines the migration from the original CEVS (Composite Environme
 The following endpoints have been disabled to maintain focus:
 
 ### Authentication & User Management
+
 - `/auth/*` - User authentication system
 - `/user/*` - User profile management
 - `/admin/*` - Legacy admin endpoints
 
 ### CEVS-Specific Features
+
 - `/global/*` - Multi-source data aggregation
 - `/permits/*` - Environmental permits data
 - `/cloudflare/*` - Infrastructure management
 
 ### Legacy Data Sources
+
 - EEA industrial pollution trends
 - EDGAR global emissions data
 - ISO certification aggregation
@@ -41,19 +46,23 @@ The following endpoints have been disabled to maintain focus:
 ## Active SEC API Endpoints
 
 ### Core Functionality
+
 - `POST /v1/emissions/calculate` - Scope 1 & 2 emissions calculation
 - `GET /v1/emissions/factors` - Emission factors management
 - `GET /v1/emissions/units` - Supported units
 
 ### Validation & Compliance
+
 - `POST /v1/validation/epa` - EPA cross-validation
 - `POST /v1/admin/mappings` - Company-facility mapping
 
 ### Export & Reporting
+
 - `GET /v1/export/sec/cevs/{company}` - CEVS data export
 - `POST /v1/export/sec/package` - SEC filing package generation
 
 ### Audit & Governance
+
 - `POST /v1/audit` - Audit trail creation
 - `GET /v1/audit` - Audit trail retrieval
 
