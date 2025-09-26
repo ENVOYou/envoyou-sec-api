@@ -231,6 +231,10 @@ app.openapi = custom_openapi
 # Register routers - SEC API focused
 app.include_router(health_router, prefix="/health")
 
+# Authentication & User Management (for frontend integration)
+app.include_router(supabase_auth_router, prefix="/auth")
+app.include_router(user_router, prefix="/user")
+
 # Core SEC API endpoints
 app.include_router(audit_trail_router, prefix="/v1/audit")
 app.include_router(export_router, prefix="/v1/export")
@@ -244,8 +248,6 @@ app.include_router(admin_mapping_router, prefix="/v1/admin")
 # app.include_router(global_router, prefix="/global", dependencies=[Depends(api_key_dependency), Depends(rate_limiter)])
 # app.include_router(admin_router, prefix="/admin")
 # app.include_router(auth_router, prefix="/auth")
-# app.include_router(supabase_auth_router, prefix="/auth")
-# app.include_router(user_router, prefix="/user")
 # app.include_router(cloudflare_router, prefix="/cloudflare")
 
 @app.get("/", tags=["Health"])
@@ -258,6 +260,9 @@ async def home():
         'endpoints': {
             '/': 'API information',
             '/health': 'Health check',
+            '/auth/login': 'User authentication (Supabase)',
+            '/auth/register': 'User registration (Supabase)',
+            '/user/profile': 'User profile management',
             '/v1/emissions/calculate': 'Calculate Scope 1 & 2 emissions',
             '/v1/emissions/factors': 'Get emission factors',
             '/v1/emissions/units': 'Get supported units',
@@ -275,8 +280,14 @@ async def home():
             'audit_trail': '/v1/audit'
         },
         'authentication': {
-            'api_key': 'X-API-Key header required for most endpoints',
-            'demo_key': 'demo_key (for testing)'
+            'supabase': 'JWT token from Supabase auth for user endpoints',
+            'api_key': 'X-API-Key header required for SEC API endpoints',
+            'demo_key': 'demo_key (for testing SEC endpoints)'
+        },
+        'frontend_integration': {
+            'app_url': 'https://app.envoyou.com',
+            'docs_url': 'https://docs.envoyou.com',
+            'auth_provider': 'Supabase'
         }
     }
     return api_info
@@ -290,6 +301,7 @@ async def not_found(request: Request, exc):
             'message': 'Endpoint not found',
             'available_endpoints': [
                 '/', '/health',
+                '/auth/login', '/auth/register', '/user/profile',
                 '/v1/emissions/calculate', '/v1/emissions/factors', '/v1/emissions/units',
                 '/v1/validation/epa',
                 '/v1/export/sec/cevs/{company}', '/v1/export/sec/package',
