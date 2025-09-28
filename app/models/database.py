@@ -30,10 +30,7 @@ def get_db():
 
 def create_tables():
     """Create all database tables"""
-    from .user import Base
-    from .api_key import Base as APIKeyBase
-    from .session import Base as SessionBase
-    from .notification import Base as NotificationBase
-    
+    # Import models to register with Base.metadata
+    from . import Base  # noqa: F401
     # Create all tables using the same metadata
     Base.metadata.create_all(bind=engine)
