@@ -108,6 +108,59 @@ def _extract_co2_from_eia(eia_data: List[Dict[str, Any]]) -> Optional[float]:
     return total if total > 0 else None
 
 
+def _calculate_confidence_score(matches_count: int, flags: List[Dict[str, Any]], quantitative_deviation: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    """Calculate confidence score based on validation results."""
+    base_score = 100
+    
+    # Deduct points for flags
+    for flag in flags:
+        if flag["severity"] == "critical":
+            base_score -= 40
+        elif flag["severity"] == "high":
+            base_score -= 25
+        elif flag["severity"] == "medium":
+            base_score -= 15
+        elif flag["severity"] == "low":
+            base_score -= 5
+    
+    # Bonus for good matches
+    if matches_count >= 5:
+        base_score += 10
+    elif matches_count >= 3:
+        base_score += 5
+    
+    # Quantitative deviation impact
+    if quantitative_deviation:
+        for dev in quantitative_deviation.get("deviations", []):
+            deviation_pct = dev.get("deviation_pct", 0)
+            if deviation_pct > 50:
+                base_score -= 30
+            elif deviation_pct > 25:
+                base_score -= 20
+            elif deviation_pct > 10:
+                base_score -= 10
+    
+    # Ensure score is between 0-100
+    final_score = max(0, min(100, base_score))
+    
+    # Determine confidence level
+    if final_score >= 80:
+        level = "high"
+        recommendation = "Data appears reliable for SEC filing"
+    elif final_score >= 60:
+        level = "medium"
+        recommendation = "Review recommended before SEC filing"
+    else:
+        level = "low"
+        recommendation = "Manual verification required before SEC filing"
+    
+    return {
+        "score": final_score,
+        "level": level,
+        "recommendation": recommendation
+    }
+
+
 def cross_validate_epa(payload: Dict[str, Any], *, db: Optional[Session] = None, state: Optional[str] = None, year: Optional[int] = None, sample_limit: int = 5) -> Dict[str, Any]:
     """Cross-validate calculated emissions against EPA Envirofacts presence.
 
@@ -229,5 +282,9 @@ def cross_validate_epa(payload: Dict[str, Any], *, db: Optional[Session] = None,
                     "message": f"Significant deviation in {dev['pollutant']}: {dev['deviation_pct']:.1f}%",
                     "details": dev
                 })
+    
+    # Calculate confidence score
+    confidence = _calculate_confidence_score(len(matches), flags, quantitative_deviation)
+    result["confidence_analysis"] = confidence
     
     return result

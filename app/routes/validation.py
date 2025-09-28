@@ -28,6 +28,20 @@ class ValidatePayload(BaseModel):
 async def validate_epa(payload: ValidatePayload, state: Optional[str] = Query(None), year: Optional[int] = Query(None), db: Session = Depends(get_db), api_key: Any = Depends(require_api_key)):
     try:
         result = cross_validate_epa(payload.model_dump(), db=db, state=state, year=year)
-        return {"status": "success", **result}
+        
+        # Extract confidence for top-level response
+        confidence = result.get("confidence_analysis", {})
+        
+        return {
+            "status": "success",
+            "validation": {
+                "confidence_score": confidence.get("score", 0),
+                "confidence_level": confidence.get("level", "unknown"),
+                "recommendation": confidence.get("recommendation", "Manual review required"),
+                "matches_found": result.get("epa", {}).get("matches_count", 0),
+                "flags_count": len(result.get("flags", []))
+            },
+            **result
+        }
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))

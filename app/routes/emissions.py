@@ -32,10 +32,52 @@ class CalcPayload(BaseModel):
         return v
 
 
+def _assess_calculation_confidence(payload_dict: Dict[str, Any], result: Dict[str, Any]) -> Dict[str, Any]:
+    """Quick confidence assessment for emissions calculation."""
+    score = 85  # Base score for calculation
+    
+    # Check data completeness
+    scope1 = payload_dict.get("scope1")
+    scope2 = payload_dict.get("scope2")
+    
+    if not scope1 and not scope2:
+        score -= 50
+        level = "low"
+        recommendation = "No emission data provided"
+    elif scope1 and scope2:
+        score += 10  # Bonus for complete data
+        level = "high"
+        recommendation = "Complete Scope 1 & 2 data - ready for SEC filing"
+    else:
+        level = "medium"
+        recommendation = "Partial data - consider EPA validation"
+    
+    # Check for reasonable values
+    total_co2e = result.get("totals", {}).get("emissions_kg", 0) / 1000  # Convert to tonnes
+    if total_co2e > 100000:  # Very large emissions
+        score -= 10
+        recommendation += " - Verify large emission values"
+    elif total_co2e < 1:  # Very small emissions
+        score -= 5
+        recommendation += " - Verify small emission values"
+    
+    return {
+        "score": max(0, min(100, score)),
+        "level": level,
+        "recommendation": recommendation
+    }
+
+
 @router.post("/calculate")
 async def calculate(payload: CalcPayload, api_key: Any = Depends(require_api_key), db: Session = Depends(get_db)):
     try:
-        result = calculate_emissions(payload.model_dump())
+        payload_dict = payload.model_dump()
+        result = calculate_emissions(payload_dict)
+        
+        # Add confidence assessment
+        confidence = _assess_calculation_confidence(payload_dict, result)
+        result["confidence_analysis"] = confidence
+        
         # Ensure schema exists before audit write (CI-safe)
         try:
             create_tables()
@@ -47,6 +89,7 @@ async def calculate(payload: CalcPayload, api_key: Any = Depends(require_api_key
             "version": FACTORS_VERSION,
             "components": result.get("components", {}),
             "totals": result.get("totals", {}),
+            "confidence": confidence
         }
         record_audit(
             db,
