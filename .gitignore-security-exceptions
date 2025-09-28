@@ -1,0 +1,10 @@
+# Security scan exceptions for .gitignore
+# These are GitHub URLs, not credentials
+github.com/github/gitignore/blob/main/Global/JetBrains.gitignore
+github.com/github/gitignore/blob/main/Global/VisualStudioCode.gitignore
+
+# Documentation examples - not real credentials
+export DATABASE_URL="postgresql://user:pass@host:5432/db"
+key.*=.*['"][^'"]{16,}['"] # Code patterns for sorting/filtering
+required_keys = ["amount", "unit"] # Data validation patterns
+matches.sort(key=lambda x: x["similarity_score"], reverse=True) # Sorting patterns

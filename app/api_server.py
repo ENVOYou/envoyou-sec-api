@@ -93,6 +93,7 @@ from app.routes.validation import router as validation_router
 from app.routes.admin_mapping import router as admin_mapping_router
 from app.routes.emissions_factors import router as emissions_factors_router
 from app.routes.user_extended import router as user_extended_router
+from app.routes.agents import router as agents_router
 
 # Import security utilities
 from app.utils.security import is_public_endpoint, validate_api_key, rate_limit_dependency_factory
@@ -235,6 +236,9 @@ app.include_router(validation_router, prefix="/v1/validation")
 app.include_router(admin_mapping_router, prefix="/v1/admin")
 app.include_router(user_extended_router, prefix="/user")
 
+# AI Agents endpoints
+app.include_router(agents_router, prefix="/v1/agents")
+
 # Legacy endpoints (disabled for SEC API focus)
 # app.include_router(permits_router, prefix="/permits")
 # app.include_router(global_router, prefix="/global", dependencies=[Depends(api_key_dependency), Depends(rate_limiter)])
@@ -268,7 +272,10 @@ async def home():
             '/v1/export/sec/cevs/{company}': 'Export CEVS data',
             '/v1/export/sec/package': 'Generate SEC filing package',
             '/v1/admin/mappings': 'Company-facility mapping (admin)',
-            '/v1/audit': 'Audit trail management (admin)'
+            '/v1/audit': 'Audit trail management (admin)',
+            '/v1/agents/full-workflow': 'AI-powered full compliance workflow',
+            '/v1/agents/validate-and-score': 'AI data validation and scoring',
+            '/v1/agents/status': 'AI agents status and information'
         },
         'usage_examples': {
             'calculate_emissions': '/v1/emissions/calculate',
@@ -304,7 +311,8 @@ async def not_found(request: Request, exc):
                 '/v1/emissions/calculate', '/v1/emissions/factors', '/v1/emissions/units',
                 '/v1/validation/epa',
                 '/v1/export/sec/cevs/{company}', '/v1/export/sec/package',
-                '/v1/admin/mappings', '/v1/audit'
+                '/v1/admin/mappings', '/v1/audit',
+                '/v1/agents/full-workflow', '/v1/agents/validate-and-score', '/v1/agents/status'
             ]
         }
     )
