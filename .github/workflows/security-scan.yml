@@ -16,6 +16,7 @@ jobs:
         fetch-depth: 0
     
     - name: Run GitGuardian scan
+      if: ${{ secrets.GITGUARDIAN_API_KEY != '' }}
       uses: GitGuardian/ggshield-action@v1.25.0
       env:
         GITHUB_PUSH_BEFORE_SHA: ${{ github.event.before }}
@@ -28,6 +29,6 @@ jobs:
       uses: trufflesecurity/trufflehog@main
       with:
         path: ./
-        base: main
+        base: ${{ github.event.repository.default_branch }}
         head: HEAD
-        extra_args: --debug --only-verified
+        extra_args: --only-verified
