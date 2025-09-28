@@ -282,8 +282,19 @@ id_ed25519.pub
 api_keys.txt
 tokens.txt
 .secrets
+newman-*.json
+postman-*.json
 
 # SECURITY: Local development overrides
 .env.override
 .env.secrets
 local.env
+
+.amazonq
+.amazonq/*
+.codex 
+.codex/*
+
+summary.md
+
+*.db
