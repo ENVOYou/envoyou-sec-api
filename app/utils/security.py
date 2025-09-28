@@ -7,6 +7,10 @@ from typing import Any, Dict, Optional, Set
 import time
 
 from fastapi import Request, HTTPException
+try:
+    from app.config import settings  # load .env via pydantic-settings
+except Exception:
+    settings = None
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +34,12 @@ VALID_API_KEYS: Dict[str, Dict[str, Any]] = {
 }
 
 def load_api_keys_from_env():
-    env_keys = os.getenv("API_KEYS", "")
+    # Prefer settings from app.config if available (ensures .env is loaded), fallback to os.getenv
+    env_keys = None
+    if settings is not None and getattr(settings, "API_KEYS", None):
+        env_keys = settings.API_KEYS
+    if env_keys is None:
+        env_keys = os.getenv("API_KEYS", "")
     if env_keys:
         try:
             for key_config in env_keys.split(","):

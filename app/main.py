@@ -2,6 +2,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
+import os
 
 # Initialize Sentry for error monitoring (only if DSN is configured)
 try:
@@ -103,3 +104,15 @@ app.include_router(validation_router, prefix="/v1/validation")
 @app.get("/")
 async def root():
     return {"message": "Hello, FastAPI!"}
+
+
+@app.get("/version", tags=["Health"], summary="Service version information")
+async def version_info():
+    """
+    Return basic service version and environment info.
+    """
+    return {
+        "name": app.title,
+        "version": app.version,
+        "environment": os.getenv("ENVIRONMENT", "development"),
+    }
