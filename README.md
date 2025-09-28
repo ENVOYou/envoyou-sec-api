@@ -19,12 +19,18 @@ A comprehensive backend service for SEC Climate Disclosure compliance, providing
 - [Security Prevention Guide](docs/SECURITY_PREVENTION_GUIDE.md)
 - [Infrastructure Status](docs/INFRASTRUCTURE_STATUS.md)
 - [Redis Implementation](docs/REDIS_IMPLEMENTATION_README.md)
+- [Confidence Scoring Guide](docs/CONFIDENCE_SCORING.md)
+- [Workflow Guide](docs/WORKFLOW_GUIDE.md)
+- [Manual Override Guide](docs/MANUAL_OVERRIDE_GUIDE.md)
+- [Excel Integration](docs/EXCEL_INTEGRATION.md)
+- [Service Tiers](docs/SERVICE_TIERS.md)
 
 ## 🚀 Features
 
+- **Confidence Scoring**: Quantitative assessment of data reliability for SEC filing decisions
 - **Forensic-Grade Traceability**: Every calculation stores inputs, emission factors, and sources in an immutable audit trail
-- **EPA Cross-Validation**: Automatic comparison against public EPA datasets to flag discrepancies
-- **SEC-Ready Exports**: Generate complete filing packages (JSON/CSV) for 10-K attachments
+- **EPA Cross-Validation**: Automatic comparison against public EPA datasets with deviation scoring
+- **SEC-Ready Exports**: Generate complete filing packages (JSON/CSV/Excel) for 10-K attachments
 - **RBAC Security**: Role-based access control with JWT authentication
 - **Automated Testing**: Comprehensive test suite with CI/CD integration
 - **Security Scanning**: GitGuardian + TruffleHog integration for credential protection
@@ -150,13 +156,31 @@ curl -X POST "http://localhost:8000/v1/export/sec/package" \
 {
   "status": "success",
   "company": "Demo Corp",
-  "emissions": {
-    "scope1_co2e": 53.02,
-    "scope2_co2e": 250.5,
-    "total_co2e": 303.52
+  "totals": {
+    "emissions_kg": 303520.0,
+    "emissions_tonnes": 303.52
   },
-  "audit_trail_id": "audit_123456789",
-  "package_url": "/exports/demo_corp_sec_package.zip"
+  "confidence_analysis": {
+    "score": 95,
+    "level": "high",
+    "recommendation": "Complete Scope 1 & 2 data - ready for SEC filing"
+  },
+  "audit_trail_id": "audit_123456789"
+}
+```
+
+### EPA Validation with Confidence Scoring
+
+```json
+{
+  "status": "success",
+  "validation": {
+    "confidence_score": 75,
+    "confidence_level": "medium",
+    "recommendation": "Review recommended before SEC filing",
+    "matches_found": 2,
+    "flags_count": 1
+  }
 }
 ```
 
@@ -204,11 +228,11 @@ pytest tests/test_emissions_calculate.py -v
 
 ```bash
 # Required for production
-DATABASE_URL=postgresql://user:pass@host:5432/db
-SUPABASE_URL=https://your-project.supabase.co
-SUPABASE_ANON_KEY=your_anon_key
+DATABASE_URL=postgresql://username:password@hostname:5432/database_name
+SUPABASE_URL=https://project-id.supabase.co
+SUPABASE_ANON_KEY=your_supabase_anon_key
 API_KEY=your_secure_api_key
-JWT_SECRET_KEY=your_jwt_secret
+JWT_SECRET_KEY=your_jwt_secret_key
 ```
 
 ### Security Checklist
