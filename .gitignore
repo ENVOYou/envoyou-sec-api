@@ -235,5 +235,6 @@ ALTERNATIVE_DATA_SOURCE.md
 *.txt
 error*
 debug.log
+last_chat.md
 
 COPILOT_AGENT_GUIDE.md
