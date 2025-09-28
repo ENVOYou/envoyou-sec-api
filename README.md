@@ -16,7 +16,9 @@ A comprehensive backend service for SEC Climate Disclosure compliance, providing
 - [Security Plan](docs/SECURITY_PLAN.md)
 - [Partnering Strategy](docs/PARTNERING.md)
 - [Admin Mapping Guide](docs/ADMIN_MAPPING.md)
-- [Security Prevention Guide](SECURITY_PREVENTION_GUIDE.md)
+- [Security Prevention Guide](docs/SECURITY_PREVENTION_GUIDE.md)
+- [Infrastructure Status](docs/INFRASTRUCTURE_STATUS.md)
+- [Redis Implementation](docs/REDIS_IMPLEMENTATION_README.md)
 
 ## 🚀 Features
 
