@@ -54,6 +54,28 @@ class RedisService:
         """Check if Redis is connected"""
         return self.redis_client is not None
 
+    def ping(self) -> bool:
+        """Ping Redis server to test connection"""
+        if not self.is_connected():
+            return False
+        
+        try:
+            return self.redis_client.ping()
+        except Exception as e:
+            logger.error(f"Redis ping failed: {e}")
+            return False
+
+    def get_info(self) -> dict:
+        """Get Redis server information"""
+        if not self.is_connected():
+            return {}
+        
+        try:
+            return self.redis_client.info()
+        except Exception as e:
+            logger.error(f"Failed to get Redis info: {e}")
+            return {}
+
     # Caching Methods
     def set_cache(self, key: str, value: Any, ttl_seconds: int = 300) -> bool:
         """Set cache value with TTL"""

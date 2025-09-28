@@ -73,13 +73,13 @@ class RedisMetricsService:
         try:
             # Test connection
             start_time = time.time()
-            pong = await redis_service.ping()
+            pong = redis_service.ping()  # Remove await - ping() is not async
             response_time = (time.time() - start_time) * 1000  # ms
 
             return {
-                "connected": pong == "PONG",
+                "connected": pong,
                 "response_time_ms": round(response_time, 2),
-                "status": "healthy" if pong == "PONG" else "unhealthy"
+                "status": "healthy" if pong else "unhealthy"
             }
         except Exception as e:
             return {
@@ -91,7 +91,7 @@ class RedisMetricsService:
     async def _get_performance_metrics(self, redis_service) -> Dict[str, Any]:
         """Get Redis performance metrics"""
         try:
-            info = await redis_service.get_info()
+            info = redis_service.get_info()  # Remove await - get_info() is not async
 
             return {
                 "total_commands_processed": info.get("total_commands_processed", 0),
@@ -108,7 +108,7 @@ class RedisMetricsService:
     async def _get_memory_metrics(self, redis_service) -> Dict[str, Any]:
         """Get Redis memory metrics"""
         try:
-            info = await redis_service.get_info()
+            info = redis_service.get_info()  # Remove await - get_info() is not async
 
             used_memory = info.get("used_memory", 0)
             max_memory = info.get("maxmemory", 0)
@@ -129,7 +129,7 @@ class RedisMetricsService:
         """Get cache-specific metrics"""
         try:
             # Get cache hit/miss statistics from Redis
-            info = await redis_service.get_info()
+            info = redis_service.get_info()  # Remove await - get_info() is not async
 
             keyspace_hits = info.get("keyspace_hits", 0)
             keyspace_misses = info.get("keyspace_misses", 0)
@@ -137,12 +137,15 @@ class RedisMetricsService:
 
             hit_ratio = keyspace_hits / total_requests if total_requests > 0 else 0
 
+            # Get total keys count from info
+            total_keys = sum(info.get(f"db{i}", {}).get("keys", 0) for i in range(16))
+
             return {
                 "keyspace_hits": keyspace_hits,
                 "keyspace_misses": keyspace_misses,
                 "total_requests": total_requests,
                 "hit_ratio": round(hit_ratio, 3),
-                "total_keys": await redis_service.get_key_count(),
+                "total_keys": total_keys,
             }
         except Exception as e:
             logger.warning(f"Could not get cache metrics: {e}")
@@ -157,7 +160,7 @@ class RedisMetricsService:
             # Check known queues
             queues = ["email_queue", "paddle_queue"]
             for queue in queues:
-                length = await redis_service.get_queue_length(queue)
+                length = redis_service.get_queue_length(queue)  # Remove await - not async
                 queue_lengths[queue] = length
                 total_queued += length
 
