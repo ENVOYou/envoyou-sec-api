@@ -7,22 +7,22 @@
 - Standard emissions calculation
 - Basic audit trail
 - CSV export
-- Email support
+- Email support (48-72h response)
 
 ### Professional ($299/month)
 - 5,000 API calls/month
-- EPA cross-validation
+- EPA cross-validation with confidence scoring
 - Enhanced audit trail with notes
 - Excel-formatted exports
-- Priority email support
+- Direct email support (24-48h response)
 - Deviation alerts
 
 ### Enterprise ($999/month)
 - Unlimited API calls
 - Custom emission factors
 - White-label exports
-- Phone support
-- SLA guarantee (99.9% uptime)
+- Priority email support (12-24h response)
+- Quarterly founder consultation calls
 - Custom integrations consultation
 
 ## Add-On Services
@@ -36,7 +36,7 @@
 - Auditor preparation checklist
 
 **Delivered by:** Husni Kusuma (Founder)
-**Scheduling:** support@envoyou.com
+**Scheduling:** husnikusuma@envoyou.com
 
 ### Regulatory Updates Newsletter (Free)
 **Monthly delivery:**
@@ -45,7 +45,7 @@
 - Industry best practices
 - Case studies from anonymized clients
 
-**Subscribe:** newsletter@envoyou.com
+**Subscribe:** hello@envoyou.com
 
 ### Custom Integration Support ($5,000 one-time)
 **For enterprise customers:**
@@ -66,10 +66,10 @@
 - **Transparent:** Open methodology and calculations
 
 ### What We're Not
-- We're not a large consulting firm
-- We don't have 24/7 phone support
-- We don't do on-site implementations
-- We focus on API excellence, not enterprise sales
+- We're not a large consulting firm with 24/7 phone support
+- We don't have dedicated account managers or on-site teams
+- We don't do complex enterprise sales processes
+- We focus on technical excellence, not corporate overhead
 
 ### What We Excel At
 - Technical accuracy and compliance
@@ -82,4 +82,5 @@
 2. **Demo Call:** 30-minute technical walkthrough
 3. **Pilot Program:** 90-day implementation with support
 
-**Contact:** husni@envoyou.com
+**Business Contact:** husnikusuma@envoyou.com  
+**General Support:** hello@envoyou.com

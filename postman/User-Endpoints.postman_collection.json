@@ -1,0 +1,351 @@
+{
+  "info": {
+    "name": "Envoyou User Endpoints",
+    "description": "Complete user endpoint testing for Envoyou SEC API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8000",
+      "type": "string"
+    },
+    {
+      "key": "supabaseToken",
+      "value": "{{jwt_token}}",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Auth - Supabase Verify",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{supabaseToken}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"supabase_token\": \"{{supabaseToken}}\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/auth/supabase/verify",
+          "host": ["{{baseUrl}}"],
+          "path": ["auth", "supabase", "verify"]
+        }
+      }
+    },
+    {
+      "name": "User - Get Profile",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{supabaseToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/user/profile",
+          "host": ["{{baseUrl}}"],
+          "path": ["user", "profile"]
+        }
+      }
+    },
+    {
+      "name": "User - Update Profile",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{supabaseToken}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Test User\",\n  \"company\": \"Test Company\",\n  \"job_title\": \"Developer\",\n  \"timezone\": \"UTC\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/user/profile",
+          "host": ["{{baseUrl}}"],
+          "path": ["user", "profile"]
+        }
+      }
+    },
+    {
+      "name": "User - Get Stats",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{supabaseToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/user/stats",
+          "host": ["{{baseUrl}}"],
+          "path": ["user", "stats"]
+        }
+      }
+    },
+    {
+      "name": "User - Get API Keys",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{supabaseToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/user/api-keys",
+          "host": ["{{baseUrl}}"],
+          "path": ["user", "api-keys"]
+        }
+      }
+    },
+    {
+      "name": "User - Create API Key",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{supabaseToken}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Test API Key\",\n  \"permissions\": [\"read\", \"write\"]\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/user/api-keys",
+          "host": ["{{baseUrl}}"],
+          "path": ["user", "api-keys"]
+        }
+      }
+    },
+    {
+      "name": "User - Get API Token Info",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{supabaseToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/user/api-token",
+          "host": ["{{baseUrl}}"],
+          "path": ["user", "api-token"]
+        }
+      }
+    },
+    {
+      "name": "User - Create API Token",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{supabaseToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/user/api-token",
+          "host": ["{{baseUrl}}"],
+          "path": ["user", "api-token"]
+        }
+      }
+    },
+    {
+      "name": "User - Get Sessions",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{supabaseToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/user/sessions",
+          "host": ["{{baseUrl}}"],
+          "path": ["user", "sessions"]
+        }
+      }
+    },
+    {
+      "name": "User - Get Plan",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{supabaseToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/user/plan",
+          "host": ["{{baseUrl}}"],
+          "path": ["user", "plan"]
+        }
+      }
+    },
+    {
+      "name": "User - Get Calculations",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{supabaseToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/user/calculations?page=1&limit=10",
+          "host": ["{{baseUrl}}"],
+          "path": ["user", "calculations"],
+          "query": [
+            {
+              "key": "page",
+              "value": "1"
+            },
+            {
+              "key": "limit",
+              "value": "10"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "User - Get Packages",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{supabaseToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/user/packages?page=1&limit=10",
+          "host": ["{{baseUrl}}"],
+          "path": ["user", "packages"],
+          "query": [
+            {
+              "key": "page",
+              "value": "1"
+            },
+            {
+              "key": "limit",
+              "value": "10"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "User - Get Notifications",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{supabaseToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/user/notifications",
+          "host": ["{{baseUrl}}"],
+          "path": ["user", "notifications"]
+        }
+      }
+    },
+    {
+      "name": "User - Get Preferences",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{supabaseToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/user/preferences",
+          "host": ["{{baseUrl}}"],
+          "path": ["user", "preferences"]
+        }
+      }
+    },
+    {
+      "name": "User - Update Preferences",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{supabaseToken}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"units\": \"metric\",\n  \"timezone\": \"UTC\",\n  \"email_notifications\": true,\n  \"default_company\": \"Test Company\",\n  \"default_grid_region\": \"US_default\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/user/preferences",
+          "host": ["{{baseUrl}}"],
+          "path": ["user", "preferences"]
+        }
+      }
+    },
+    {
+      "name": "User - Get Activity",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{supabaseToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/user/activity?limit=20",
+          "host": ["{{baseUrl}}"],
+          "path": ["user", "activity"],
+          "query": [
+            {
+              "key": "limit",
+              "value": "20"
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

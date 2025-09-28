@@ -228,7 +228,7 @@ pytest tests/test_emissions_calculate.py -v
 
 ```bash
 # Required for production
-DATABASE_URL=postgresql://username:password@hostname:5432/database_name
+DATABASE_URL=your_databade_url
 SUPABASE_URL=https://project-id.supabase.co
 SUPABASE_ANON_KEY=your_supabase_anon_key
 API_KEY=your_secure_api_key
@@ -282,7 +282,8 @@ See the [LICENSE](LICENSE) file for complete terms.
 **Maintainer**: Husni Kusuma — [@hk-dev13](https://github.com/hk-dev13)
 
 - 🌐 Website: [envoyou.com](https://envoyou.com)
-- 📧 Email: [info@envoyou.com](mailto:info@envoyou.com)
+- 📧 Business: [husnikusuma@envoyou.com](mailto:husnikusuma@envoyou.com)
+- 📧 Support: [hello@envoyou.com](mailto:hello@envoyou.com)
 - 📚 Documentation: [docs.envoyou.com](https://docs.envoyou.com)
 
 ---
