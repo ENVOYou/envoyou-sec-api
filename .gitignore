@@ -295,6 +295,4 @@ local.env
 .codex 
 .codex/*
 
-summary.md
-
 *.db
