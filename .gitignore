@@ -238,3 +238,52 @@ debug.log
 last_chat.md
 
 COPILOT_AGENT_GUIDE.md
+
+# SECURITY: Additional protection against credential exposure
+# Chat logs and sensitive files
+chat_*.md
+*_credentials.txt
+*_secrets.txt
+*_keys.txt
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+
+# SECURITY: Configuration files that might contain credentials
+config.json
+secrets.json
+credentials.json
+auth.json
+
+# SECURITY: Database dumps and backups
+*.sql
+*.dump
+*.backup
+
+# SECURITY: Docker secrets
+docker-compose.override.yml
+.dockerignore.local
+
+# SECURITY: Cloud provider credentials
+.aws/
+.gcp/
+.azure/
+serviceAccountKey.json
+
+# SECURITY: SSH keys
+id_rsa
+id_rsa.pub
+id_ed25519
+id_ed25519.pub
+
+# SECURITY: API keys and tokens
+api_keys.txt
+tokens.txt
+.secrets
+
+# SECURITY: Local development overrides
+.env.override
+.env.secrets
+local.env
