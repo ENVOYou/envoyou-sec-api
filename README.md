@@ -2,7 +2,7 @@
 
 [![Python Version](https://img.shields.io/badge/python-3.12-blue.svg)](https://www.python.org/downloads/release/python-3120/)
 [![Framework](https://img.shields.io/badge/framework-FastAPI-green.svg)](https://fastapi.tiangolo.com/)
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![License](https://img.shields.io/badge/license-BSL--1.1-blue.svg)](LICENSE)
 [![Build Status](https://img.shields.io/badge/build-passing-success.svg)](https://github.com/ENVOYou/envoyou-sec-api/actions)
 [![Security](https://img.shields.io/badge/security-GitGuardian-orange.svg)](https://github.com/ENVOYou/envoyou-sec-api/actions)
 
@@ -101,9 +101,10 @@ A comprehensive backend service for SEC Climate Disclosure compliance, providing
    ```
 
 6. **Access the API**
-   - API: http://localhost:8000
-   - Documentation: http://localhost:8000/docs
-   - Health Check: http://localhost:8000/health
+   - Local API: http://localhost:8000
+   - **Live Production API**: https://api.envoyou.com
+   - **Live Documentation**: https://api.envoyou.com/docs
+   - **Health Check**: https://api.envoyou.com/health
 
 ## 💻 Quick Example
 
@@ -158,6 +159,17 @@ curl -X POST "http://localhost:8000/v1/export/sec/package" \
 ```
 
 See [E2E Demo](docs/E2E_DEMO.md) for complete workflow examples.
+
+### 🌐 Live API
+
+The API is deployed and ready for testing:
+
+- **Production API**: https://api.envoyou.com
+- **Interactive Docs**: https://api.envoyou.com/docs
+- **Health Status**: https://api.envoyou.com/health
+- **OpenAPI Spec**: https://api.envoyou.com/openapi.json
+
+**Available Services**: Authentication, User Management, Emissions Calculation, SEC Export, Admin Tools
 
 ## 🧪 Testing
 
@@ -230,7 +242,14 @@ JWT_SECRET_KEY=your_jwt_secret
 
 ## 📝 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the Business Source License 1.1 (BSL-1.1).
+
+- **Non-commercial use**: Allowed for research, testing, and evaluation
+- **Commercial use**: Requires separate commercial agreement
+- **Change Date**: 2048-01-01 (converts to Apache 2.0)
+- **Commercial licensing**: Contact [husnikusuma00@envoyou.com](mailto:husnikusuma00@envoyou.com)
+
+See the [LICENSE](LICENSE) file for complete terms.
 
 ## 📧 Contact
 
