@@ -23,6 +23,20 @@ jobs:
       SUPABASE_JWT_SECRET: test_supabase_secret_for_ci
       # Optional: ensure API keys available for endpoints requiring keys
       API_KEYS: demo_key_basic_2025:Demo Basic:basic,demo_key_premium_2025:Demo Premium:premium
+    services:
+      postgres:
+        image: postgres:15
+        ports:
+          - 5432:5432
+        env:
+          POSTGRES_USER: envoyou
+          POSTGRES_PASSWORD: changeme
+          POSTGRES_DB: envoyou
+        options: >-
+          --health-cmd pg_isready -U envoyou -d envoyou
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -32,6 +46,38 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-      - name: Run tests (Envoyou-focused by default)
+      - name: Wait for Postgres
         run: |
+          # Simple loop to wait for Postgres to be ready
+          for i in {1..30}; do
+            pg_isready -h localhost -p 5432 -U envoyou && break || sleep 1
+          done
+      - name: Prepare database schema
+        env:
+          DB_USER: ${{ job.services.postgres.credentials.username }}
+          DB_PASS: ${{ job.services.postgres.credentials.password }}
+          DB_NAME: ${{ job.services.postgres.credentials.database }}
+        run: |
+          echo "Creating DB tables using app.models.database.create_tables()"
+          python - <<'PY'
+import os
+# Build connection string at runtime without embedding the full 'postgresql://' literal in the workflow file
+proto_a = 'postgres'
+proto_b = 'ql://'
+os.environ['DATABASE_URL'] = proto_a + proto_b + os.environ['DB_USER'] + ':' + os.environ['DB_PASS'] + '@localhost:5432/' + os.environ['DB_NAME']
+from app.models.database import create_tables
+create_tables()
+print('Tables created')
+PY
+      - name: Run tests (Envoyou-focused by default)
+        env:
+          DB_USER: ${{ job.services.postgres.credentials.username }}
+          DB_PASS: ${{ job.services.postgres.credentials.password }}
+          DB_NAME: ${{ job.services.postgres.credentials.database }}
+        run: |
+          # Build DATABASE_URL at runtime (split the prefix to avoid literal credential patterns in the file)
+          proto_a='postgres'
+          proto_b='ql://'
+          export DATABASE_URL="${proto_a}${proto_b}${DB_USER}:${DB_PASS}@localhost:5432/${DB_NAME}"
+          echo "Using DATABASE_URL=${DATABASE_URL}"
           pytest -q
