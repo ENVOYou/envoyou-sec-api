@@ -52,23 +52,6 @@ jobs:
           for i in {1..30}; do
             pg_isready -h localhost -p 5432 -U envoyou && break || sleep 1
           done
-      - name: Prepare database schema
-        env:
-          DB_USER: ${{ job.services.postgres.credentials.username }}
-          DB_PASS: ${{ job.services.postgres.credentials.password }}
-          DB_NAME: ${{ job.services.postgres.credentials.database }}
-        run: |
-          echo "Creating DB tables using app.models.database.create_tables()"
-          python - <<'PY'
-import os
-# Build connection string at runtime without embedding the full 'postgresql://' literal in the workflow file
-proto_a = 'postgres'
-proto_b = 'ql://'
-os.environ['DATABASE_URL'] = proto_a + proto_b + os.environ['DB_USER'] + ':' + os.environ['DB_PASS'] + '@localhost:5432/' + os.environ['DB_NAME']
-from app.models.database import create_tables
-create_tables()
-print('Tables created')
-PY
       - name: Run Alembic migrations
         env:
           DB_USER: ${{ job.services.postgres.credentials.username }}
