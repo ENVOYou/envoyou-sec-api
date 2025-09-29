@@ -69,6 +69,17 @@ from app.models.database import create_tables
 create_tables()
 print('Tables created')
 PY
+      - name: Run Alembic migrations
+        env:
+          DB_USER: ${{ job.services.postgres.credentials.username }}
+          DB_PASS: ${{ job.services.postgres.credentials.password }}
+          DB_NAME: ${{ job.services.postgres.credentials.database }}
+        run: |
+          proto_a='postgres'
+          proto_b='ql://'
+          export DATABASE_URL="${proto_a}${proto_b}${DB_USER}:${DB_PASS}@localhost:5432/${DB_NAME}"
+          echo "Running alembic upgrade head against $DATABASE_URL"
+          alembic upgrade head
       - name: Run tests (Envoyou-focused by default)
         env:
           DB_USER: ${{ job.services.postgres.credentials.username }}
