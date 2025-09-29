@@ -21,8 +21,14 @@ class SupabaseUser(BaseModel):
 
 class SupabaseAuthMiddleware:
     def __init__(self):
-        if not settings.SUPABASE_JWT_SECRET:
-            raise ValueError("SUPABASE_JWT_SECRET environment variable is required")
+        # Require either a configured SUPABASE_JWT_SECRET (HS256) or a SUPABASE_JWKS_URL (asymmetric/JWKS)
+        if not settings.SUPABASE_JWT_SECRET and not settings.SUPABASE_JWKS_URL and not settings.SUPABASE_URL:
+            raise ValueError("Either SUPABASE_JWT_SECRET or SUPABASE_JWKS_URL/SUPABASE_URL environment variable is required")
+        if settings.DEBUG_SUPABASE_AUTH:
+            if settings.SUPABASE_JWKS_URL or settings.SUPABASE_URL:
+                logging.getLogger(__name__).info("SupabaseAuth: using JWKS (SUPABASE_JWKS_URL or SUPABASE_URL present)")
+            else:
+                logging.getLogger(__name__).info("SupabaseAuth: using SUPABASE_JWT_SECRET (HS256)")
         # Simple in-memory cache for JWKS
         self._jwks_cache = {
             "keys": None,
