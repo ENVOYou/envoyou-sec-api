@@ -32,11 +32,10 @@ jobs:
           POSTGRES_USER: envoyou
           POSTGRES_PASSWORD: changeme
           POSTGRES_DB: envoyou
-        options: >-
-          --health-cmd 'pg_isready -U envoyou -d envoyou'
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
+        # Intentionally omitting Docker service options/health-cmd here because
+        # passing a health-cmd with flags can be parsed as docker CLI flags
+        # on some runners. We use an explicit "Wait for Postgres" step below
+        # that runs `pg_isready` to ensure the DB is ready before migrations/tests.
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
