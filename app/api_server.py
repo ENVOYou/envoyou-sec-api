@@ -94,6 +94,7 @@ from app.routes.admin_mapping import router as admin_mapping_router
 from app.routes.emissions_factors import router as emissions_factors_router
 from app.routes.user_extended import router as user_extended_router
 from app.routes.agents import router as agents_router
+from app.routes.recaptcha import router as recaptcha_router
 
 # Import security utilities
 from app.utils.security import is_public_endpoint, validate_api_key, rate_limit_dependency_factory
@@ -238,6 +239,9 @@ app.include_router(user_extended_router, prefix="/user")
 
 # AI Agents endpoints
 app.include_router(agents_router, prefix="/v1/agents")
+
+# reCAPTCHA verification endpoint used by frontend
+app.include_router(recaptcha_router, prefix="/verify-recaptcha")
 
 # Legacy endpoints (disabled for SEC API focus)
 # app.include_router(permits_router, prefix="/permits")
