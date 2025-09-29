@@ -213,13 +213,23 @@ class SupabaseAuthMiddleware:
 
         # Use python-jose to construct the public key and verify
         from jose import jwt as jose_jwt
-        # jose can accept the jwk dict via 'key' argument
+        # Determine algorithm to use: prefer 'alg' field, fall back to kty mapping
+        alg = key_obj.get('alg')
+        if not alg:
+            kty = key_obj.get('kty', '').upper()
+            if kty == 'RSA':
+                alg = 'RS256'
+            elif kty == 'EC':
+                alg = 'ES256'
+            else:
+                alg = 'RS256'
+
         try:
-            # Let jose select the proper algorithm from the key (RS/ES)
-            payload = jose_jwt.decode(token, key_obj, algorithms=[key_obj.get('alg')] , options={"verify_aud": False})
+            payload = jose_jwt.decode(token, key_obj, algorithms=[alg], options={"verify_aud": False})
             return payload
         except Exception as e:
-            raise
+            logging.getLogger(__name__).warning("[SUPABASE VERIFY] JWKS verification failed (kid=%s alg=%s): %s", kid, alg, e)
+            raise JWTError(str(e))
 
 # Global middleware instance
 supabase_auth = SupabaseAuthMiddleware()
