@@ -332,3 +332,43 @@ class FallbackDataManager:
                 "Intelligent sample generation"
             ]
         }
+
+
+def fetch_us_emissions_data(source: Optional[str] = None, state: Optional[str] = None,
+                            year: Optional[int] = None, pollutant: Optional[str] = None,
+                            limit: int = 100) -> Dict[str, Any]:
+    """Compatibility wrapper expected by routes.global_data.
+
+    This function provides a synchronous interface that returns a dict with keys:
+      - data: List[records]
+      - source: string identifying which fallback was used
+
+    It leverages FallbackDataManager's async methods internally but exposes a sync API
+    because some routes import and call it synchronously during module import / request handling.
+    """
+    manager = FallbackDataManager()
+
+    # Use a new event loop to run the async fallback lookup synchronously
+    import asyncio
+
+    async def _fetch():
+        # Attempt to get fallback facilities (this returns structured data with 'facilities')
+        result = await manager.get_fallback_facilities(company=state or "unknown", state=state)
+        # Normalize to a simple list under 'data'
+        facilities = result.get('facilities', [])
+        return {
+            'data': facilities[:limit],
+            'source': result.get('source', 'fallback')
+        }
+
+    try:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        result = loop.run_until_complete(_fetch())
+    finally:
+        try:
+            loop.close()
+        except Exception:
+            pass
+
+    return result

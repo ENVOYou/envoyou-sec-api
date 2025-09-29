@@ -10,7 +10,7 @@ from typing import Dict, Any, List, Optional
 
 from ..models.database import get_db
 from ..agents.agent_manager import AgentManager
-from ..utils.auth_dependencies import get_current_user
+from .dependencies import get_current_user
 
 router = APIRouter(tags=["Agents"])
 

@@ -3,6 +3,12 @@ import os
 import sys
 import pytest
 
+# Ensure tests run against a local SQLite database by default when
+# DATABASE_URL isn't provided in the environment. This avoids attempts
+# to connect to services like 'envoyou-postgres' during local test runs.
+# CI or developers can still override by setting DATABASE_URL before running pytest.
+os.environ.setdefault("DATABASE_URL", "sqlite:///./test.db")
+
 # Add project root to sys.path for absolute imports like 'tests.*'
 ROOT = os.path.abspath(os.path.dirname(__file__))
 if ROOT not in sys.path:
