@@ -23,6 +23,10 @@ jobs:
       SUPABASE_JWT_SECRET: test_supabase_secret_for_ci
       # Optional: ensure API keys available for endpoints requiring keys
       API_KEYS: demo_key_basic_2025:Demo Basic:basic,demo_key_premium_2025:Demo Premium:premium
+      # Postgres service credentials (exposed to job steps so DATABASE_URL can be constructed)
+      POSTGRES_USER: envoyou
+      POSTGRES_PASSWORD: changeme
+      POSTGRES_DB: envoyou
     services:
       postgres:
         image: postgres:15
