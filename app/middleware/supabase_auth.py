@@ -2,6 +2,10 @@
 import os
 import jwt
 import logging
+import time
+import requests
+from jose import jwk, jwt as jose_jwt, JWTError
+from jose.utils import base64url_decode
 from fastapi import Request, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from typing import Optional
@@ -19,6 +23,11 @@ class SupabaseAuthMiddleware:
     def __init__(self):
         if not settings.SUPABASE_JWT_SECRET:
             raise ValueError("SUPABASE_JWT_SECRET environment variable is required")
+        # Simple in-memory cache for JWKS
+        self._jwks_cache = {
+            "keys": None,
+            "fetched_at": 0
+        }
 
     def verify_token(self, token: str) -> SupabaseUser:
         """Verify Supabase JWT token and extract user information"""
@@ -37,9 +46,33 @@ class SupabaseAuthMiddleware:
                 if settings.DEBUG_SUPABASE_AUTH:
                     logging.getLogger(__name__).debug("[SUPABASE VERIFY] Failed to parse header: %s", e)
 
-            # Disable audience verification because Supabase sets aud to authenticated/ or project ref
-            # We only care about signature validity here.
-            payload = jwt.decode(token, settings.SUPABASE_JWT_SECRET, algorithms=["HS256"], options={"verify_aud": False})
+            # Prefer JWKS-based verification if configured (handles key rotation)
+            payload = None
+            jwks_url = settings.SUPABASE_JWKS_URL
+            # If JWKS URL is not set but SUPABASE_URL is, derive the common JWKS location
+            if not jwks_url and settings.SUPABASE_URL:
+                jwks_url = settings.SUPABASE_URL.rstrip('/') + '/.well-known/jwks.json'
+
+            if jwks_url:
+                try:
+                    payload = self._verify_with_jwks(token, jwks_url)
+                except Exception as e:
+                    if settings.DEBUG_SUPABASE_AUTH:
+                        logging.getLogger(__name__).debug("[SUPABASE VERIFY] JWKS verification failed: %s", e)
+
+            # If JWKS not used or verification failed, fall back to HS256 with primary then secondary
+            if payload is None:
+                try:
+                    payload = jwt.decode(token, settings.SUPABASE_JWT_SECRET, algorithms=["HS256"], options={"verify_aud": False})
+                except Exception as primary_exc:
+                    # Try secondary secret if configured
+                    if settings.SUPABASE_JWT_SECRET_SECONDARY:
+                        try:
+                            payload = jwt.decode(token, settings.SUPABASE_JWT_SECRET_SECONDARY, algorithms=["HS256"], options={"verify_aud": False})
+                        except Exception:
+                            raise primary_exc
+                    else:
+                        raise primary_exc
             aud = payload.get('aud')
             if settings.DEBUG_SUPABASE_AUTH:
                 logging.getLogger(__name__).debug(
@@ -134,6 +167,53 @@ class SupabaseAuthMiddleware:
             )
 
         return self.verify_token(token)
+
+    def _fetch_jwks(self, jwks_url: str) -> dict:
+        """Fetch JWKS with a basic caching layer."""
+        now = int(time.time())
+        ttl = settings.SUPABASE_JWKS_CACHE_TTL or 0
+        if self._jwks_cache["keys"] and (now - self._jwks_cache["fetched_at"] < ttl):
+            return self._jwks_cache["keys"]
+
+        resp = requests.get(jwks_url, timeout=5)
+        resp.raise_for_status()
+        jwks = resp.json()
+        self._jwks_cache["keys"] = jwks
+        self._jwks_cache["fetched_at"] = now
+        return jwks
+
+    def _verify_with_jwks(self, token: str, jwks_url: str) -> dict:
+        """Verify a JWT using a JWKS endpoint and return the payload on success."""
+        # Parse header to get kid
+        try:
+            header_b64 = token.split('.')[0]
+            header_json = base64url_decode(header_b64.encode())
+            import json
+            header = json.loads(header_json)
+            kid = header.get('kid')
+        except Exception:
+            raise JWTError('Invalid token header')
+
+        jwks = self._fetch_jwks(jwks_url)
+        keys = jwks.get('keys', [])
+        key_obj = None
+        for k in keys:
+            if k.get('kid') == kid:
+                key_obj = k
+                break
+
+        if key_obj is None:
+            raise JWTError('No matching JWK found for kid')
+
+        # Use python-jose to construct the public key and verify
+        from jose import jwt as jose_jwt
+        # jose can accept the jwk dict via 'key' argument
+        try:
+            # Let jose select the proper algorithm from the key (RS/ES)
+            payload = jose_jwt.decode(token, key_obj, algorithms=[key_obj.get('alg')] , options={"verify_aud": False})
+            return payload
+        except Exception as e:
+            raise
 
 # Global middleware instance
 supabase_auth = SupabaseAuthMiddleware()

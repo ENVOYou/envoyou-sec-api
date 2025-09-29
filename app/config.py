@@ -121,6 +121,18 @@ class Settings(BaseSettings):
     SUPABASE_URL: Optional[str] = None
     SUPABASE_ANON_KEY: Optional[str] = None
     SUPABASE_JWT_SECRET: Optional[str] = None
+    # Optional JWKS URL for Supabase Auth (preferred long-term verification)
+    # If not provided, we will derive a sensible default from SUPABASE_URL
+    SUPABASE_JWKS_URL: Optional[str] = None
+    # How long to cache JWKS in seconds (in-memory). Set to 0 to disable caching.
+    SUPABASE_JWKS_CACHE_TTL: int = 300
+    # Support a secondary (previous) Supabase JWT secret to allow a grace period
+    # during key rotation. If set, the verifier will try this secret when the
+    # primary `SUPABASE_JWT_SECRET` fails.
+    SUPABASE_JWT_SECRET_SECONDARY: Optional[str] = None
+    # Optional comma-separated list of accepted algorithms (e.g. "HS256,RS256,ES256").
+    # If None, defaults to accepting HS256 and common asymmetric algs when appropriate.
+    SUPABASE_ACCEPT_ALGORITHMS: Optional[str] = None
     ENABLE_SUPABASE_AUTH: bool = False
     # Verbose Supabase auth debug (header/payload prints)
     DEBUG_SUPABASE_AUTH: bool = False
