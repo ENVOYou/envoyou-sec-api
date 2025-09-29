@@ -296,3 +296,4 @@ local.env
 .codex/*
 
 *.db
+uploads/exports/*.zip
