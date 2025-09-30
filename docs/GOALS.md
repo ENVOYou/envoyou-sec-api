@@ -51,4 +51,4 @@ This concise document serves as an internal reference to keep the project focuse
 [Backend](https://github.com/ENVOYou/envoyou-sec-api) Status: Deploy on Railway (phyton, Fast API)  
 [Landing Page](https://github.com/ENVOYou/envoyou-landing) Status: Deploy on Netlify (React, Vite)  
 [Dashboard Login/Register](https://github.com/ENVOYou/app-envoyou-sec-api) Status: Deploy on vercel (Next.js, React)  
-[Documentation](https://github.com/ENVOYou/envoyou-docs) Status: Deploy on Netlify (React, Docusaurus)  
+[Documentation](https://github.com/ENVOYou/envoyou-docs) Status: Deploy on Netlify (React, Docusaurus)
