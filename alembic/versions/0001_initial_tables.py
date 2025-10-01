@@ -50,11 +50,12 @@ def upgrade() -> None:
     # Create emissions_calculations table
     op.create_table('emissions_calculations',
         sa.Column('id', sa.Integer(), nullable=False),
-        sa.Column('user_id', sa.Integer(), nullable=True),
+        sa.Column('user_id', sa.String(), nullable=True),
         sa.Column('company', sa.String(255), nullable=False),
         sa.Column('scope1_data', sa.JSON(), nullable=True),
         sa.Column('scope2_data', sa.JSON(), nullable=True),
         sa.Column('results', sa.JSON(), nullable=False),
+        sa.Column('name', sa.Text(), nullable=True),
         sa.Column('created_at', sa.DateTime(), nullable=True),
         sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
         sa.PrimaryKeyConstraint('id')

@@ -20,6 +20,7 @@ from .notification import (
 )
 from .audit_trail import AuditTrail
 from .company_map import CompanyFacilityMap
+from .emissions_calculation import EmissionsCalculation
 
 # Make all models available at package level
 __all__ = [
@@ -35,4 +36,5 @@ __all__ = [
     "NotificationPreference",
     "AuditTrail",
     "CompanyFacilityMap",
+    "EmissionsCalculation",
 ]
