@@ -15,6 +15,7 @@ router = APIRouter()
 class CalculationResponse(BaseModel):
     id: str
     company: str
+    name: Optional[str] = None
     calculation_data: dict
     result: dict
     version: str
@@ -25,6 +26,14 @@ class CalculationListResponse(BaseModel):
     total: int
     page: int
     limit: int
+
+
+class CalculationSaveRequest(BaseModel):
+    name: Optional[str] = None
+    company: str
+    calculation_data: dict
+    result: dict
+    version: Optional[str] = 'v0.1.0'
 
 class PackageResponse(BaseModel):
     id: str
@@ -129,6 +138,79 @@ async def get_user_calculations(
         total = 0
     
     return CalculationListResponse(calculations=calculations, total=total, page=page, limit=limit)
+
+
+@router.post("/calculations", response_model=CalculationResponse)
+async def save_user_calculation(
+    payload: CalculationSaveRequest,
+    current_user: User = Depends(get_db_user),
+    db: Session = Depends(get_db)
+):
+    """Save a new emissions calculation for the current user"""
+    from sqlalchemy import text
+
+    try:
+        # Try to include the optional name column if provided. If the DB schema
+        # doesn't have the `name` column, fall back to the earlier insert that
+        # omits it. This keeps compatibility with older DBs.
+        if payload.name is not None:
+            try:
+                res = db.execute(
+                    text("INSERT INTO emissions_calculations (user_id, company, name, calculation_data, result, version) VALUES (:user_id, :company, :name, :calculation_data, :result, :version) RETURNING id, created_at"),
+                    {
+                        "user_id": current_user.auth_provider_id,
+                        "company": payload.company,
+                        "name": payload.name,
+                        "calculation_data": payload.calculation_data,
+                        "result": payload.result,
+                        "version": payload.version or 'v0.1.0'
+                    }
+                )
+            except Exception as e:
+                # Detect common DB error messages indicating the `name` column
+                # doesn't exist and fall back to the older insert.
+                msg = str(e).lower()
+                if 'column "name"' in msg or 'no such column: name' in msg or 'unknown column' in msg:
+                    res = db.execute(
+                        text("INSERT INTO emissions_calculations (user_id, company, calculation_data, result, version) VALUES (:user_id, :company, :calculation_data, :result, :version) RETURNING id, created_at"),
+                        {
+                            "user_id": current_user.auth_provider_id,
+                            "company": payload.company,
+                            "calculation_data": payload.calculation_data,
+                            "result": payload.result,
+                            "version": payload.version or 'v0.1.0'
+                        }
+                    )
+                else:
+                    raise
+        else:
+            res = db.execute(
+                text("INSERT INTO emissions_calculations (user_id, company, calculation_data, result, version) VALUES (:user_id, :company, :calculation_data, :result, :version) RETURNING id, created_at"),
+                {
+                    "user_id": current_user.auth_provider_id,
+                    "company": payload.company,
+                    "calculation_data": payload.calculation_data,
+                    "result": payload.result,
+                    "version": payload.version or 'v0.1.0'
+                }
+            )
+
+        db.commit()
+        row = res.fetchone()
+        created_at = row.created_at.isoformat() if row and row.created_at else datetime.now(UTC).isoformat()
+        # Some DBs may not have persisted the name column; prefer payload.name
+        name_val = payload.name if payload.name is not None else getattr(row, 'name', None)
+        return CalculationResponse(
+            id=str(row.id) if row else '',
+            company=payload.company,
+            name=name_val,
+            calculation_data=payload.calculation_data,
+            result=payload.result,
+            version=payload.version or 'v0.1.0',
+            created_at=created_at
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to save calculation: {str(e)}")
 
 @router.get("/calculations/{calculation_id}")
 async def get_user_calculation(
