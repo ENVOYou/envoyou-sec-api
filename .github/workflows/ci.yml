@@ -25,7 +25,7 @@ jobs:
       API_KEYS: demo_key_basic_2025:Demo Basic:basic,demo_key_premium_2025:Demo Premium:premium
       # Postgres service credentials (exposed to job steps so DATABASE_URL can be constructed)
       POSTGRES_USER: envoyou
-  POSTGRES_PASSWORD: ${{ secrets.CI_POSTGRES_PASSWORD }}
+      POSTGRES_PASSWORD: ${{ secrets.CI_POSTGRES_PASSWORD }}
       POSTGRES_DB: envoyou
     services:
       postgres:
