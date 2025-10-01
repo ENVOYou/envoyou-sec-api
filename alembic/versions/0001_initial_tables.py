@@ -46,17 +46,20 @@ def upgrade() -> None:
 
     # Create api_keys table
     op.create_table('api_keys',
-        sa.Column('id', sa.Integer(), nullable=False),
+        sa.Column('id', sa.String(), nullable=False),
         sa.Column('user_id', sa.String(), nullable=False),
-        sa.Column('name', sa.String(255), nullable=False),
-        sa.Column('key_hash', sa.String(255), nullable=False),
-        sa.Column('prefix', sa.String(20), nullable=False),
-        sa.Column('permissions', sa.JSON(), nullable=True),
+        sa.Column('name', sa.String(), nullable=False),
+        sa.Column('key_hash', sa.String(), nullable=False),
+        sa.Column('prefix', sa.String(), nullable=False),
+        sa.Column('permissions', sa.Text(), nullable=False),
         sa.Column('is_active', sa.Boolean(), nullable=True, default=True),
-        sa.Column('created_at', sa.DateTime(), nullable=True),
-        sa.Column('last_used_at', sa.DateTime(), nullable=True),
+        sa.Column('last_used', sa.DateTime(timezone=True), nullable=True),
+        sa.Column('usage_count', sa.Integer(), nullable=True, default=0),
+        sa.Column('created_at', sa.DateTime(timezone=True), nullable=True),
+        sa.Column('updated_at', sa.DateTime(timezone=True), nullable=True),
         sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
         sa.PrimaryKeyConstraint('id'),
+        sa.UniqueConstraint('key_hash'),
         sa.UniqueConstraint('prefix')
     )
 
