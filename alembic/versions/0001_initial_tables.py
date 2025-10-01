@@ -82,7 +82,7 @@ def upgrade() -> None:
         sa.Column('id', sa.String(), nullable=False),
         sa.Column('source_file', sa.String(), nullable=False),
         sa.Column('calculation_version', sa.String(), nullable=False),
-        sa.Column('timestamp', sa.DateTime(timezone=True), nullable=False),
+        sa.Column('timestamp', sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()),
         sa.Column('company_cik', sa.String(), nullable=False),
         sa.Column('s3_path', sa.String(), nullable=True),
         sa.Column('gcs_path', sa.String(), nullable=True),
