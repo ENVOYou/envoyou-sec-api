@@ -372,3 +372,13 @@ def fetch_us_emissions_data(source: Optional[str] = None, state: Optional[str] =
             pass
 
     return result
+
+
+async def fetch_facility_info_with_fallback(facility_name: str, force_source: Optional[str] = None) -> list:
+    """
+    Async wrapper expected by routes.environmental that returns a list of facilities.
+    Delegates to FallbackDataManager.get_fallback_facilities.
+    """
+    manager = FallbackDataManager()
+    res = await manager.get_fallback_facilities(company=facility_name, state=None)
+    return res.get('facilities', [])
