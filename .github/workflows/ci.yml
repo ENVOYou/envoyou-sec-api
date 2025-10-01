@@ -56,37 +56,25 @@ jobs:
             pg_isready -h localhost -p 5432 -U envoyou && break || sleep 1
           done
       - name: Run Alembic migrations
-        env:
-          DB_USER: ${{ job.services.postgres.credentials.username }}
-          DB_PASS: ${{ job.services.postgres.credentials.password }}
-          DB_NAME: ${{ job.services.postgres.credentials.database }}
         run: |
           proto_a='postgres'
           proto_b='ql://'
-          export DATABASE_URL="${proto_a}${proto_b}${DB_USER}:${DB_PASS}@localhost:5432/${DB_NAME}"
-          echo "Running alembic upgrade head against $DATABASE_URL"
+          export DATABASE_URL="${proto_a}${proto_b}${POSTGRES_USER}:${POSTGRES_PASSWORD}@localhost:5432/${POSTGRES_DB}"
+          echo "Running alembic upgrade head"
           alembic upgrade head
       - name: Seed demo data (admin user + demo API key)
-        env:
-          DB_USER: ${{ job.services.postgres.credentials.username }}
-          DB_PASS: ${{ job.services.postgres.credentials.password }}
-          DB_NAME: ${{ job.services.postgres.credentials.database }}
         run: |
           # Build DATABASE_URL at runtime
           proto_a='postgres'
           proto_b='ql://'
-          export DATABASE_URL="${proto_a}${proto_b}${DB_USER}:${DB_PASS}@localhost:5432/${DB_NAME}"
-          echo "Seeding DB ($DATABASE_URL)"
+          export DATABASE_URL="${proto_a}${proto_b}${POSTGRES_USER}:${POSTGRES_PASSWORD}@localhost:5432/${POSTGRES_DB}"
+          echo "Seeding DB"
           python scripts/seed_demo_data.py
       - name: Run tests (Envoyou-focused by default)
-        env:
-          DB_USER: ${{ job.services.postgres.credentials.username }}
-          DB_PASS: ${{ job.services.postgres.credentials.password }}
-          DB_NAME: ${{ job.services.postgres.credentials.database }}
         run: |
           # Build DATABASE_URL at runtime (split the prefix to avoid literal credential patterns in the file)
           proto_a='postgres'
           proto_b='ql://'
-          export DATABASE_URL="${proto_a}${proto_b}${DB_USER}:${DB_PASS}@localhost:5432/${DB_NAME}"
-          echo "Using DATABASE_URL=${DATABASE_URL}"
+          export DATABASE_URL="${proto_a}${proto_b}${POSTGRES_USER}:${POSTGRES_PASSWORD}@localhost:5432/${POSTGRES_DB}"
+          echo "Running tests"
           pytest -q
