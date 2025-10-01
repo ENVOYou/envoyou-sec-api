@@ -79,21 +79,21 @@ def upgrade() -> None:
 
     # Create audit_trail table
     op.create_table('audit_trail',
-        sa.Column('id', sa.Integer(), nullable=False),
-        sa.Column('user_id', sa.String(), nullable=True),
-        sa.Column('action', sa.String(255), nullable=False),
-        sa.Column('resource_type', sa.String(100), nullable=True),
-        sa.Column('resource_id', sa.String(255), nullable=True),
-        sa.Column('details', sa.JSON(), nullable=True),
-        sa.Column('ip_address', sa.String(45), nullable=True),
-        sa.Column('user_agent', sa.Text(), nullable=True),
-        sa.Column('created_at', sa.DateTime(), nullable=True),
-        sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
+        sa.Column('id', sa.String(), nullable=False),
+        sa.Column('source_file', sa.String(), nullable=False),
+        sa.Column('calculation_version', sa.String(), nullable=False),
+        sa.Column('timestamp', sa.DateTime(timezone=True), nullable=False),
+        sa.Column('company_cik', sa.String(), nullable=False),
+        sa.Column('s3_path', sa.String(), nullable=True),
+        sa.Column('gcs_path', sa.String(), nullable=True),
+        sa.Column('notes', sa.Text(), nullable=True),
         sa.PrimaryKeyConstraint('id')
     )
+    op.create_index('ix_audit_trail_company_cik', 'audit_trail', ['company_cik'])
 
 
 def downgrade() -> None:
+    op.drop_index('ix_audit_trail_company_cik', 'audit_trail')
     op.drop_table('audit_trail')
     op.drop_table('emissions_calculations')
     op.drop_table('api_keys')

@@ -31,23 +31,10 @@ def test_migration_adds_name_column():
     engine = create_engine('sqlite:///:memory:')
     conn = engine.connect()
 
-    # Create table as pre-migration state
-    meta = MetaData()
-    sa.Table('emissions_calculations', meta,
-             sa.Column('id', sa.Text, primary_key=True),
-             sa.Column('user_id', sa.Text),
-             sa.Column('company', sa.Text),
-             sa.Column('calculation_data', sa.Text),
-             sa.Column('result', sa.Text),
-             sa.Column('version', sa.Text),
-             sa.Column('created_at', sa.Text),
-             )
-    meta.create_all(engine)
-
-    # Import the migration module by file path and run its upgrade() against this connection
+    # Import the initial migration and run it
     import importlib.util
     import pathlib
-    mig_path = pathlib.Path(__file__).parent.parent / 'alembic' / 'versions' / '0001_add_name_to_emissions.py'
+    mig_path = pathlib.Path(__file__).parent.parent / 'alembic' / 'versions' / '0001_initial_tables.py'
     spec = importlib.util.spec_from_file_location('migration_mod', str(mig_path))
     migration = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(migration)
@@ -56,15 +43,14 @@ def test_migration_adds_name_column():
     ctx = MigrationContext.configure(conn)
     op_obj = Operations(ctx)
 
-    # Bind the alembic op proxy to our Operations instance so migration.upgrade()
-    # can call op.add_column() etc.
+    # Bind the alembic op proxy to our Operations instance
     import alembic.op as alembic_op
     alembic_op._proxy = op_obj
 
-    # Run upgrade (it will use alembic.op which is now proxied to our connection)
+    # Run upgrade (creates all tables including emissions_calculations with name column)
     migration.upgrade()
 
-    # Reflect table and assert column exists
+    # Reflect table and assert name column exists
     insp = sa.inspect(conn)
     cols = [c['name'] for c in insp.get_columns('emissions_calculations')]
-    assert 'name' in cols
+    assert 'name' in cols, f"Expected 'name' column in emissions_calculations, got columns: {cols}"
