@@ -77,7 +77,7 @@ jobs:
           proto_b='ql://'
           export DATABASE_URL="${proto_a}${proto_b}${DB_USER}:${DB_PASS}@localhost:5432/${DB_NAME}"
           echo "Seeding DB ($DATABASE_URL)"
-          python - <<'PY'
+          python - <<'EOF'
 import os
 from app.models.database import SessionLocal
 from app.models.user import User
@@ -109,7 +109,7 @@ try:
         print('Demo API key already exists')
 finally:
     db.close()
-PY
+EOF
       - name: Run tests (Envoyou-focused by default)
         env:
           DB_USER: ${{ job.services.postgres.credentials.username }}
