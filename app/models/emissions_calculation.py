@@ -13,7 +13,7 @@ class EmissionsCalculation(Base):
     __tablename__ = 'emissions_calculations'
 
     id = Column(Integer, primary_key=True)
-    user_id = Column(Integer, ForeignKey('users.id'), nullable=True)
+    user_id = Column(String, ForeignKey('users.id'), nullable=True)
     company = Column(String(255), nullable=False)
     scope1_data = Column(JSON, nullable=True)
     scope2_data = Column(JSON, nullable=True)
