@@ -1,15 +1,15 @@
 """Add name column to emissions_calculations
 
-Revision ID: 0001_add_name_to_emissions
-Revises: None
+Revision ID: 0002_add_name_to_emissions
+Revises: 0001_initial_tables
 Create Date: 2025-10-01 00:00:00.000000
 """
 from alembic import op
 import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
-revision = '0001_add_name_to_emissions'
-down_revision = None
+revision = '0002_add_name_to_emissions'
+down_revision = '0001_initial_tables'
 branch_labels = None
 depends_on = None
 
