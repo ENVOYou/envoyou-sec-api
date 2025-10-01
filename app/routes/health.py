@@ -9,7 +9,7 @@ from app.services.redis_metrics import redis_metrics
 
 router = APIRouter()
 
-@router.get("", tags=["Health"], summary="Health Check Endpoint")
+@router.get("/health", tags=["Health"], summary="Health Check Endpoint")
 async def health_check():
     """
     Comprehensive health check for AWS App Runner and monitoring.
@@ -94,7 +94,7 @@ async def test_email(email: str):
     try:
         result = email_service.send_verification_email(
             to_email=email,
-            verification_token="test-verification-token-123"
+            verification_token="test123"
         )
         
         if result:

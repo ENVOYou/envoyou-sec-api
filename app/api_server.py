@@ -19,22 +19,23 @@ async def lifespan(app: FastAPI):
     
     port = settings.PORT # Use settings for port
     print("="*60)
-    print("🚀 Envoyou SEC Compliance API Server")
+    print("Envoyou SEC Compliance API Server")
     print("="*60)
-    print(f"🌐 Server running on port {port}")
-    print("🎯 Focus: SEC Climate Disclosure (Scope 1 & 2)")
+    print(f"Server running on port {port}")
+    print("Focus: SEC Climate Disclosure (Scope 1 & 2)")
     print("")
-    print("📋 Available endpoints:")
+    print("Available endpoints:")
     print("  GET  /                     - API information")
     print("  GET  /health               - Health check")
     print("")
     print("🔐 Authentication (Supabase):")
-    print("  POST /auth/login           - User login")
-    print("  POST /auth/register        - User registration")
-    print("  GET  /user/profile         - User profile")
-    print("  GET  /user/api-keys        - API key management")
+    print("  POST /v1/auth/login        - User login")
+    print("  POST /v1/auth/register     - User registration")
+    print("  POST /v1/auth/supabase/verify - Supabase token verification")
+    print("  GET  /v1/user/profile      - User profile")
+    print("  GET  /v1/user/api-keys     - API key management")
     print("")
-    print("🏭 SEC Compliance API:")
+    print("SEC Compliance API:")
     print("  POST /v1/emissions/calculate - Calculate Scope 1 & 2 emissions")
     print("  GET  /v1/emissions/factors   - Get emission factors")
     print("  POST /v1/validation/epa      - EPA cross-validation")
@@ -42,7 +43,6 @@ async def lifespan(app: FastAPI):
     print("  POST /v1/admin/mappings      - Company-facility mapping (admin)")
     print("  GET  /v1/audit               - Audit trail (admin)")
     print("")
-    print("✅ Ready for app.envoyou.com integration")
     print("="*60)
     
     yield
@@ -147,11 +147,13 @@ logger = logging.getLogger(__name__)
 async def api_key_dependency(request: Request):
     public_paths = [
         "/health", "/", "/docs", "/openapi.json", "/redoc",
-        "/auth/register", "/auth/set-password", "/auth/login", "/auth/refresh", "/auth/logout",
-        "/auth/send-verification", "/auth/verify-email", "/auth/forgot-password", "/auth/reset-password",
-        "/auth/2fa/setup", "/auth/2fa/verify", "/auth/2fa/disable",
-        "/auth/google/login", "/auth/google/callback",
-        "/auth/github/login", "/auth/github/callback"
+        "/v1/auth/register", "/v1/auth/set-password", "/v1/auth/login", "/v1/auth/refresh", "/v1/auth/logout",
+        "/v1/auth/send-verification", "/v1/auth/verify-email", "/v1/auth/forgot-password", "/v1/auth/reset-password",
+        "/v1/auth/2fa/setup", "/v1/auth/2fa/verify", "/v1/auth/2fa/disable",
+        "/v1/auth/google/login", "/v1/auth/google/callback",
+        "/v1/auth/github/login", "/v1/auth/github/callback",
+        "/v1/auth/supabase/verify", "/v1/auth/supabase/me",
+        "/v1/verify-recaptcha"
         ]
     path = request.url.path
     if not any(path == pub_path or path.startswith(pub_path + "/") for pub_path in public_paths):
@@ -194,9 +196,9 @@ def custom_openapi():
     if app.openapi_schema:
         return app.openapi_schema
     openapi_schema = get_openapi(
-        title="Environmental Data Verification API",
+        title="Envoyou SEC Compliance API",
         version="1.0.0",
-        description="Production API for environmental data verification and compliance checking with multi-source data integration",
+        description="SEC Climate Disclosure compliance API with auditable emissions calculation and EPA validation",
         routes=app.routes,
         tags=[
             {"name": "Health", "description": "Service health and status endpoints"},
@@ -222,11 +224,11 @@ def custom_openapi():
 app.openapi = custom_openapi
 
 # Register routers - SEC API focused
-app.include_router(health_router, prefix="/health")
+app.include_router(health_router)
 
 # Authentication & User Management (for frontend integration)
-app.include_router(supabase_auth_router, prefix="/auth")
-app.include_router(user_router, prefix="/user")
+app.include_router(supabase_auth_router, prefix="/v1/auth")
+app.include_router(user_router, prefix="/v1/user")
 
 # Core SEC API endpoints
 app.include_router(audit_trail_router, prefix="/v1/audit")
@@ -235,13 +237,13 @@ app.include_router(emissions_router, prefix="/v1/emissions")
 app.include_router(emissions_factors_router, prefix="/v1/emissions")
 app.include_router(validation_router, prefix="/v1/validation")
 app.include_router(admin_mapping_router, prefix="/v1/admin")
-app.include_router(user_extended_router, prefix="/user")
+app.include_router(user_extended_router, prefix="/v1/user")
 
 # AI Agents endpoints
 app.include_router(agents_router, prefix="/v1/agents")
 
 # reCAPTCHA verification endpoint used by frontend
-app.include_router(recaptcha_router, prefix="/verify-recaptcha")
+app.include_router(recaptcha_router, prefix="/v1/verify-recaptcha")
 
 # Legacy endpoints (disabled for SEC API focus)
 # app.include_router(permits_router, prefix="/permits")
@@ -260,15 +262,16 @@ async def home():
         'endpoints': {
             '/': 'API information',
             '/health': 'Health check',
-            '/auth/login': 'User authentication (Supabase)',
-            '/auth/register': 'User registration (Supabase)',
-            '/user/profile': 'User profile management',
-            '/user/api-keys': 'API key management',
-            '/user/calculations': 'Calculation history',
-            '/user/packages': 'SEC package management',
-            '/user/notifications': 'User notifications',
-            '/user/preferences': 'User preferences',
-            '/user/activity': 'Activity log',
+            '/v1/auth/login': 'User authentication (Supabase)',
+            '/v1/auth/register': 'User registration (Supabase)',
+            '/v1/auth/supabase/verify': 'Supabase token verification',
+            '/v1/user/profile': 'User profile management',
+            '/v1/user/api-keys': 'API key management',
+            '/v1/user/calculations': 'Calculation history',
+            '/v1/user/packages': 'SEC package management',
+            '/v1/user/notifications': 'User notifications',
+            '/v1/user/preferences': 'User preferences',
+            '/v1/user/activity': 'Activity log',
             '/v1/emissions/calculate': 'Calculate Scope 1 & 2 emissions',
             '/v1/emissions/factors': 'Get emission factors',
             '/v1/emissions/units': 'Get supported units',
@@ -310,8 +313,8 @@ async def not_found(request: Request, exc):
             'message': 'Endpoint not found',
             'available_endpoints': [
                 '/', '/health',
-                '/auth/login', '/auth/register', '/user/profile', '/user/api-keys',
-                '/user/calculations', '/user/packages', '/user/notifications', '/user/preferences', '/user/activity',
+                '/v1/auth/login', '/v1/auth/register', '/v1/auth/supabase/verify', '/v1/user/profile', '/v1/user/api-keys',
+                '/v1/user/calculations', '/v1/user/packages', '/v1/user/notifications', '/v1/user/preferences', '/v1/user/activity',
                 '/v1/emissions/calculate', '/v1/emissions/factors', '/v1/emissions/units',
                 '/v1/validation/epa',
                 '/v1/export/sec/cevs/{company}', '/v1/export/sec/package',

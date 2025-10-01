@@ -18,7 +18,7 @@ router = APIRouter(tags=["Agents"])
 agent_manager = AgentManager()
 
 
-@router.post("/agents/full-workflow")
+@router.post("/full-workflow")
 async def run_full_compliance_workflow(
     data: Dict[str, Any],
     db: Session = Depends(get_db),
@@ -47,7 +47,7 @@ async def run_full_compliance_workflow(
         )
 
 
-@router.post("/agents/validate-and-score")
+@router.post("/validate-and-score")
 async def validate_and_score_data(
     data: Dict[str, Any],
     db: Session = Depends(get_db),
@@ -72,7 +72,7 @@ async def validate_and_score_data(
         )
 
 
-@router.post("/agents/targeted-analysis")
+@router.post("/targeted-analysis")
 async def run_targeted_analysis(
     data: Dict[str, Any],
     agents: List[str],
@@ -102,7 +102,7 @@ async def run_targeted_analysis(
         )
 
 
-@router.get("/agents/audit-report/{company}")
+@router.get("/audit-report/{company}")
 async def generate_audit_report(
     company: str,
     report_type: str = "compliance",
@@ -131,7 +131,7 @@ async def generate_audit_report(
         )
 
 
-@router.get("/agents/status")
+@router.get("/status")
 async def get_agents_status():
     """Get status and information about available agents."""
     try:
@@ -148,7 +148,7 @@ async def get_agents_status():
         )
 
 
-@router.post("/agents/data-quality")
+@router.post("/data-quality")
 async def analyze_data_quality(
     data: Dict[str, Any],
     current_user: Optional[Dict] = Depends(get_current_user)
@@ -168,7 +168,7 @@ async def analyze_data_quality(
         )
 
 
-@router.post("/agents/epa-validation")
+@router.post("/epa-validation")
 async def run_epa_validation(
     data: Dict[str, Any],
     state: Optional[str] = None,
@@ -193,7 +193,7 @@ async def run_epa_validation(
         )
 
 
-@router.post("/agents/sec-compliance")
+@router.post("/sec-compliance")
 async def run_sec_compliance_analysis(
     data: Dict[str, Any],
     db: Session = Depends(get_db),
