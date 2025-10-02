@@ -34,35 +34,53 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
 
         # Define rate limits based on endpoint and authentication
         rate_limit_config = self._get_rate_limit_config(request, bool(user_id))
+        rate_limit_key = f"ratelimit:{identifier}:{request.url.path}"
 
-        # Check rate limit
-        allowed, remaining = redis_service.check_rate_limit(
-            key=f"ratelimit:{identifier}:{request.url.path}",
-            limit=rate_limit_config["limit"],
-            window_seconds=rate_limit_config["window"]
-        )
+        # Check current count without incrementing
+        if redis_service.is_connected():
+            try:
+                now = int(time.time())
+                window_start = now - rate_limit_config["window"]
+                redis_service.redis_client.zremrangebyscore(rate_limit_key, '-inf', window_start)
+                current_count = redis_service.redis_client.zcard(rate_limit_key)
+                
+                if current_count >= rate_limit_config["limit"]:
+                    return JSONResponse(
+                        status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                        content={
+                            "error": "Rate limit exceeded",
+                            "message": f"Too many requests. Try again in {rate_limit_config['window']} seconds.",
+                            "retry_after": rate_limit_config["window"]
+                        },
+                        headers={
+                            "Retry-After": str(rate_limit_config["window"])
+                        }
+                    )
+            except Exception:
+                pass  # Allow on Redis error
 
-        # Add rate limit headers to response
+        # Process request
         response = await call_next(request)
+
+        # Only increment counter for successful requests (2xx, 3xx)
+        if 200 <= response.status_code < 400:
+            if redis_service.is_connected():
+                try:
+                    now = int(time.time())
+                    redis_service.redis_client.zadd(rate_limit_key, {str(now): now})
+                    redis_service.redis_client.expire(rate_limit_key, rate_limit_config["window"])
+                    remaining = rate_limit_config["limit"] - (current_count + 1)
+                except Exception:
+                    remaining = rate_limit_config["limit"]
+            else:
+                remaining = rate_limit_config["limit"]
+        else:
+            remaining = rate_limit_config["limit"] - current_count if redis_service.is_connected() else rate_limit_config["limit"]
 
         # Add rate limit headers
         response.headers["X-RateLimit-Limit"] = str(rate_limit_config["limit"])
-        response.headers["X-RateLimit-Remaining"] = str(remaining)
+        response.headers["X-RateLimit-Remaining"] = str(max(0, remaining))
         response.headers["X-RateLimit-Reset"] = str(int(time.time()) + rate_limit_config["window"])
-
-        if not allowed:
-            # Rate limit exceeded
-            return JSONResponse(
-                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-                content={
-                    "error": "Rate limit exceeded",
-                    "message": f"Too many requests. Try again in {rate_limit_config['window']} seconds.",
-                    "retry_after": rate_limit_config["window"]
-                },
-                headers={
-                    "Retry-After": str(rate_limit_config["window"])
-                }
-            )
 
         return response
 
