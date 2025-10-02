@@ -267,6 +267,8 @@ async def get_user_stats(current_user: User = Depends(get_db_user), db: Session 
 
     # Count active keys
     active_keys = len(api_keys)
+    
+    print(f"[DEBUG] User stats for {current_user.email}: active_keys={active_keys}, total_calls={total_calls}")  # Debug log
 
     # Get last activity (most recent last_used across all keys or last_login)
     last_activity = None
