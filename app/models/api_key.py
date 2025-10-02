@@ -41,8 +41,8 @@ class APIKey(Base):
         key_hash = hashlib.sha256(raw_key.encode()).hexdigest()
         self.prefix = f"env_{key_hash[:8]}"
         
-        # Store hash of the full key
-        self.key_hash = hashlib.sha256(raw_key.encode()).hexdigest()
+        # Store hash of the raw key (not the full key with prefix)
+        self.key_hash = key_hash
         
         # Return the actual key (only shown once during creation)
         return f"{self.prefix}_{raw_key}"
@@ -50,16 +50,15 @@ class APIKey(Base):
     def verify_key(self, provided_key: str) -> bool:
         """Verify if provided key matches this API key"""
         try:
-            # Extract the actual key part (after prefix_)
-            if "_" not in provided_key:
+            # Check if key starts with our prefix
+            if not provided_key.startswith(self.prefix + "_"):
                 return False
             
-            prefix, key_part = provided_key.split("_", 1)
-            if prefix != self.prefix:
-                return False
+            # Extract the raw key part after prefix_
+            raw_key = provided_key[len(self.prefix) + 1:]
             
-            # Hash the provided key and compare
-            provided_hash = hashlib.sha256(key_part.encode()).hexdigest()
+            # Hash the raw key and compare with stored hash
+            provided_hash = hashlib.sha256(raw_key.encode()).hexdigest()
             return provided_hash == self.key_hash
         except:
             return False

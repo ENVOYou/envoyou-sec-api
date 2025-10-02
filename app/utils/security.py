@@ -61,8 +61,12 @@ load_api_keys_from_env()
 def validate_api_key(api_key: str) -> Optional[Dict[str, Any]]:
     if not api_key:
         return None
+    
+    # Check hardcoded demo keys first
     if api_key in VALID_API_KEYS:
         return VALID_API_KEYS[api_key]
+    
+    # Check master key
     env_master_key = os.getenv("MASTER_API_KEY")
     if env_master_key and hmac.compare_digest(api_key, env_master_key):
         return {
@@ -71,6 +75,40 @@ def validate_api_key(api_key: str) -> Optional[Dict[str, Any]]:
             "created": datetime.now(),
             "requests_per_minute": 200,
         }
+    
+    # Check database API keys
+    try:
+        from app.models.database import SessionLocal
+        from app.models.api_key import APIKey
+        
+        db = SessionLocal()
+        try:
+            # Find API key by prefix (first part before underscore)
+            if "_" in api_key:
+                prefix = "_".join(api_key.split("_")[:-1])  # Get prefix part
+                db_key = db.query(APIKey).filter(
+                    APIKey.prefix == prefix,
+                    APIKey.is_active == True
+                ).first()
+                
+                if db_key and db_key.verify_key(api_key):
+                    # Update usage
+                    db_key.update_usage()
+                    db.commit()
+                    
+                    return {
+                        "name": db_key.name,
+                        "tier": "premium",  # All user keys are premium
+                        "created": db_key.created_at,
+                        "requests_per_minute": 100,
+                        "user_id": db_key.user_id,
+                        "api_key_id": db_key.id
+                    }
+        finally:
+            db.close()
+    except Exception as e:
+        logger.error(f"Error validating database API key: {e}")
+    
     return None
 
 async def require_api_key(request: Request):
@@ -127,16 +165,16 @@ def rate_limit_dependency_factory():
     return check_rate_limit
 
 def generate_api_key(client_name: str, tier: str = "basic") -> str:
-    timestamp = datetime.now().isoformat()
-    raw_key = f"{client_name}_{tier}_{timestamp}"
-    api_key = hashlib.sha256(raw_key.encode()).hexdigest()[:32]
-    VALID_API_KEYS[api_key] = {
+    timestamp = str(int(time.time()))
+    raw_data = f"{client_name}_{tier}_{timestamp}"
+    generated_key = hashlib.sha256(raw_data.encode()).hexdigest()[:32]
+    VALID_API_KEYS[generated_key] = {
         "name": client_name,
         "tier": tier,
         "created": datetime.now(),
         "requests_per_minute": 30 if tier == "basic" else 100,
     }
-    return api_key
+    return generated_key
 
 def list_api_keys() -> Dict[str, Dict[str, Any]]:
     safe_keys = {}
