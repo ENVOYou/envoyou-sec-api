@@ -131,7 +131,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
                 "GET": {"limit": 60, "window": 60},  # 60 reads per minute
                 "POST": {"limit": 5, "window": 300},  # 5 creates per 5 minutes
                 "DELETE": {"limit": 10, "window": 300},  # 10 deletes per 5 minutes
-            }
+            },
 
             # File upload endpoints
             "/v1/user/avatar": {"limit": 5, "window": 3600},  # 5 uploads per hour
