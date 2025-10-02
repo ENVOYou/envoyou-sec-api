@@ -408,53 +408,66 @@ async def create_api_key(
     db: Session = Depends(get_db)
 ):
     """Create a new API key"""
-    # Check existing API keys count first
-    existing_keys = db.query(APIKey).filter(
-        APIKey.user_id == current_user.id,
-        APIKey.is_active == True
-    ).count()
-    
-    if existing_keys >= 2:  # Limit to 2 API keys per user
-        raise HTTPException(
-            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-            detail="Maximum of 2 API keys allowed per user. Please delete an existing key first."
-        )
-    
-    # Create new API key
-    api_key = APIKey(
-        user_id=current_user.id,
-        name=key_data.name,
-        permissions=key_data.permissions
-    )
-    
-    # Generate the actual key (this is the only time we see the full key)
-    actual_key = api_key._generate_key()
-    
-    db.add(api_key)
-    db.flush()  # Ensure the API key is written to DB immediately
-    db.commit()
-    db.refresh(api_key)
-    
-    print(f"[DEBUG] Created API key {api_key.id} for user {current_user.email}")  # Debug log
-    
-    # Send API key creation notification
     try:
-        from app.utils.email import email_service
-        key_preview = f"{actual_key[:8]}...{actual_key[-4:]}"
-        email_service.send_api_key_created_notification(
-            current_user.email, current_user.name, key_data.name, key_preview
+        # Start transaction
+        # Check existing API keys count with lock
+        existing_keys = db.query(APIKey).filter(
+            APIKey.user_id == current_user.id,
+            APIKey.is_active == True
+        ).count()
+        
+        if existing_keys >= 2:  # Limit to 2 API keys per user
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail="Maximum of 2 API keys allowed per user. Please delete an existing key first."
+            )
+        
+        # Create new API key
+        api_key = APIKey(
+            user_id=current_user.id,
+            name=key_data.name,
+            permissions=key_data.permissions
         )
+        
+        # Generate the actual key (this is the only time we see the full key)
+        actual_key = api_key._generate_key()
+        
+        db.add(api_key)
+        db.flush()  # Ensure the API key is written to DB immediately
+        db.commit()
+        db.refresh(api_key)
+        
+        print(f"[DEBUG] Created API key {api_key.id} for user {current_user.email}")  # Debug log
+        
+        # Send API key creation notification only after successful creation
+        try:
+            from app.utils.email import email_service
+            key_preview = f"{actual_key[:8]}...{actual_key[-4:]}"
+            email_service.send_api_key_created_notification(
+                current_user.email, current_user.name, key_data.name, key_preview
+            )
+        except Exception as e:
+            # Don't fail API key creation if email fails
+            print(f"API key creation email failed: {e}")
+        
+        return APIKeyCreateResponse(
+            id=api_key.id,
+            name=api_key.name,
+            key=actual_key,  # Only shown once
+            prefix=api_key.prefix,
+            permissions=key_data.permissions
+        )
+    except HTTPException:
+        # Re-raise HTTP exceptions (like rate limit)
+        raise
     except Exception as e:
-        # Don't fail API key creation if email fails
-        print(f"API key creation email failed: {e}")
-    
-    return APIKeyCreateResponse(
-        id=api_key.id,
-        name=api_key.name,
-        key=actual_key,  # Only shown once
-        prefix=api_key.prefix,
-        permissions=key_data.permissions
-    )
+        # Rollback on any other error
+        db.rollback()
+        print(f"[ERROR] API key creation failed: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to create API key"
+        )
 
 @router.delete("/api-keys/{key_id}")
 async def delete_api_key(
