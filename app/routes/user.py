@@ -244,10 +244,19 @@ async def get_user_stats(current_user: User = Depends(get_db_user), db: Session 
     from sqlalchemy import func
 
     # Get all active API keys for the user
+    print(f"[DEBUG] Querying API keys for user_id={current_user.id}, email={current_user.email}")  # Debug log
+    
     api_keys = db.query(APIKey).filter(
         APIKey.user_id == current_user.id,
         APIKey.is_active == True
     ).all()
+    
+    # Also check all API keys (including inactive) for debugging
+    all_keys = db.query(APIKey).filter(APIKey.user_id == current_user.id).all()
+    print(f"[DEBUG] Found {len(all_keys)} total API keys, {len(api_keys)} active for user {current_user.email}")  # Debug log
+    
+    for key in all_keys:
+        print(f"[DEBUG] API Key: id={key.id}, name={key.name}, active={key.is_active}, user_id={key.user_id}")  # Debug log
 
     # Calculate total calls across all API keys
     total_calls = sum(key.usage_count for key in api_keys if key.usage_count)
