@@ -418,6 +418,9 @@ async def create_api_key(
 ):
     """Create a new API key"""
     try:
+        # Refresh database session to get latest data
+        db.expire_all()
+        
         # Start transaction
         # Check existing API keys count with lock
         existing_keys = db.query(APIKey).filter(
@@ -499,6 +502,9 @@ async def delete_api_key(
     # Hard delete the API key
     db.delete(api_key)
     db.commit()
+    
+    # Refresh session to ensure deletion is visible
+    db.expire_all()
     
     print(f"[DEBUG] Deleted API key {key_id} for user {current_user.email}")  # Debug log
     
