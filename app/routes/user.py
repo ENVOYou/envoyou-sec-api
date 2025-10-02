@@ -496,9 +496,11 @@ async def delete_api_key(
             detail="API key not found"
         )
     
-    # Soft delete by marking as inactive
-    api_key.is_active = False
+    # Hard delete the API key
+    db.delete(api_key)
     db.commit()
+    
+    print(f"[DEBUG] Deleted API key {key_id} for user {current_user.email}")  # Debug log
     
     return {
         "message": "API key deleted successfully"
