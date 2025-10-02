@@ -148,13 +148,14 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         # Check if path matches any special endpoint
         for endpoint_path, limits in endpoint_limits.items():
             if path.startswith(endpoint_path):
-                # Check if limits are method-specific
-                if isinstance(limits, dict) and method in limits:
+                # Check if limits are method-specific (nested dict with HTTP methods)
+                if isinstance(limits, dict) and method in limits and isinstance(limits[method], dict):
                     return limits[method]
-                elif isinstance(limits, dict) and "limit" in limits:
+                # Check if limits are simple dict with limit/window
+                elif isinstance(limits, dict) and "limit" in limits and "window" in limits:
                     return limits
-                # If no method-specific limit, use default
-                continue
+                # If nested dict but method not found, use default
+                break
 
         # Return default limits
         return {
