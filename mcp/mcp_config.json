@@ -1,0 +1,27 @@
+{
+  "mcpServers": {
+    "supabase": {
+      "command": "python3",
+      "args": ["mcp/servers/supabase_mcp.py"],
+      "env": {
+        "SUPABASE_URL": "${SUPABASE_URL}",
+        "SUPABASE_ANON_KEY": "${SUPABASE_ANON_KEY}"
+      }
+    },
+    "redis": {
+      "command": "python3",
+      "args": ["mcp/servers/redis_mcp.py"],
+      "env": {
+        "REDIS_URL": "${REDIS_URL}"
+      }
+    },
+    "cloudflare": {
+      "command": "python3",
+      "args": ["mcp/servers/cloudflare_mcp.py"],
+      "env": {
+        "CLOUDFLARE_API_TOKEN": "${CLOUDFLARE_API_TOKEN}",
+        "CLOUDFLARE_ACCOUNT_ID": "${CLOUDFLARE_ACCOUNT_ID}"
+      }
+    }
+  }
+}
