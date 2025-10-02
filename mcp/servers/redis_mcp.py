@@ -2,6 +2,7 @@
 """MCP Server for Redis (Upstash) operations"""
 import os
 import json
+from typing import Any
 import redis
 
 class RedisMCP:

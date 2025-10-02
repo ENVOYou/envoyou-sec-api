@@ -4,12 +4,21 @@ Model Context Protocol (MCP) servers untuk integrasi dengan Supabase, Redis (Ups
 
 ## Setup
 
-1. **Install dependencies**:
+1. **Create virtual environment**:
 ```bash
-pip install supabase redis requests
+cd mcp
+python3 -m venv venv
+source venv/bin/activate  # Linux/Mac
+# or
+venv\Scripts\activate  # Windows
 ```
 
-2. **Set environment variables**:
+2. **Install dependencies**:
+```bash
+pip install -r requirements.txt
+```
+
+3. **Set environment variables**:
 ```bash
 export SUPABASE_URL="your_supabase_url"
 export SUPABASE_ANON_KEY="your_supabase_key"
