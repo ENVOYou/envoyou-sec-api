@@ -3,41 +3,89 @@
 import os
 import json
 from typing import Any
-from supabase import create_client, Client
+from datetime import datetime, date
+import psycopg2
+from psycopg2.extras import RealDictCursor
 
 class SupabaseMCP:
     def __init__(self):
-        self.client: Client = create_client(
-            os.getenv("SUPABASE_URL"),
-            os.getenv("SUPABASE_ANON_KEY")
-        )
+        self.db_url = os.getenv("DATABASE_URL")
     
     def query(self, table: str, filters: dict = None, select: str = "*") -> dict:
-        """Query Supabase table"""
-        query = self.client.table(table).select(select)
-        if filters:
-            for key, value in filters.items():
-                query = query.eq(key, value)
-        return {"data": query.execute().data}
+        """Query table via PostgreSQL"""
+        try:
+            conn = psycopg2.connect(self.db_url)
+            cur = conn.cursor(cursor_factory=RealDictCursor)
+            
+            sql = f"SELECT {select} FROM {table}"
+            if filters:
+                where = " AND ".join([f"{k} = %s" for k in filters.keys()])
+                sql += f" WHERE {where}"
+                cur.execute(sql, tuple(filters.values()))
+            else:
+                cur.execute(sql)
+            
+            rows = cur.fetchall()
+            data = []
+            for row in rows:
+                row_dict = dict(row)
+                # Convert datetime to string
+                for k, v in row_dict.items():
+                    if isinstance(v, (datetime, date)):
+                        row_dict[k] = v.isoformat()
+                data.append(row_dict)
+            cur.close()
+            conn.close()
+            return {"success": True, "data": data, "count": len(data)}
+        except Exception as e:
+            return {"success": False, "error": str(e)}
     
     def insert(self, table: str, data: dict) -> dict:
-        """Insert into Supabase table"""
-        result = self.client.table(table).insert(data).execute()
-        return {"data": result.data}
+        """Insert into table"""
+        try:
+            conn = psycopg2.connect(self.db_url)
+            cur = conn.cursor()
+            cols = ", ".join(data.keys())
+            vals = ", ".join(["%s"] * len(data))
+            sql = f"INSERT INTO {table} ({cols}) VALUES ({vals}) RETURNING *"
+            cur.execute(sql, tuple(data.values()))
+            conn.commit()
+            cur.close()
+            conn.close()
+            return {"success": True}
+        except Exception as e:
+            return {"success": False, "error": str(e)}
     
     def update(self, table: str, filters: dict, data: dict) -> dict:
-        """Update Supabase table"""
-        query = self.client.table(table).update(data)
-        for key, value in filters.items():
-            query = query.eq(key, value)
-        return {"data": query.execute().data}
+        """Update table"""
+        try:
+            conn = psycopg2.connect(self.db_url)
+            cur = conn.cursor()
+            set_clause = ", ".join([f"{k} = %s" for k in data.keys()])
+            where = " AND ".join([f"{k} = %s" for k in filters.keys()])
+            sql = f"UPDATE {table} SET {set_clause} WHERE {where}"
+            cur.execute(sql, tuple(data.values()) + tuple(filters.values()))
+            conn.commit()
+            cur.close()
+            conn.close()
+            return {"success": True}
+        except Exception as e:
+            return {"success": False, "error": str(e)}
     
     def delete(self, table: str, filters: dict) -> dict:
-        """Delete from Supabase table"""
-        query = self.client.table(table).delete()
-        for key, value in filters.items():
-            query = query.eq(key, value)
-        return {"data": query.execute().data}
+        """Delete from table"""
+        try:
+            conn = psycopg2.connect(self.db_url)
+            cur = conn.cursor()
+            where = " AND ".join([f"{k} = %s" for k in filters.keys()])
+            sql = f"DELETE FROM {table} WHERE {where}"
+            cur.execute(sql, tuple(filters.values()))
+            conn.commit()
+            cur.close()
+            conn.close()
+            return {"success": True}
+        except Exception as e:
+            return {"success": False, "error": str(e)}
 
 def main():
     import sys

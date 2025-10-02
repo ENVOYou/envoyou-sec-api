@@ -21,11 +21,10 @@ class CloudflareMCP:
         response = requests.post(url, headers=self.headers, json=data)
         return response.json()
     
-    def get_zone_analytics(self, zone_id: str, since: int = -10080) -> dict:
-        """Get zone analytics (last 7 days by default)"""
-        url = f"{self.base_url}/zones/{zone_id}/analytics/dashboard"
-        params = {"since": since}
-        response = requests.get(url, headers=self.headers, params=params)
+    def get_zone_details(self, zone_id: str) -> dict:
+        """Get zone details"""
+        url = f"{self.base_url}/zones/{zone_id}"
+        response = requests.get(url, headers=self.headers)
         return response.json()
     
     def list_dns_records(self, zone_id: str) -> dict:
@@ -60,7 +59,7 @@ def main():
     
     commands = {
         "purge_cache": lambda: mcp.purge_cache(**args),
-        "get_zone_analytics": lambda: mcp.get_zone_analytics(**args),
+        "get_zone_details": lambda: mcp.get_zone_details(**args),
         "list_dns_records": lambda: mcp.list_dns_records(**args),
         "create_dns_record": lambda: mcp.create_dns_record(**args),
         "get_firewall_rules": lambda: mcp.get_firewall_rules(**args),
