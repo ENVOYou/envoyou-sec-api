@@ -371,6 +371,8 @@ async def get_api_keys(current_user: User = Depends(get_db_user), db: Session = 
         APIKey.is_active == True
     ).all()
     
+    print(f"[DEBUG] Found {len(api_keys)} API keys for user {current_user.email}")  # Debug log
+    
     # Convert to dict and ensure all required fields are present
     api_key_responses = []
     for key in api_keys:
@@ -407,8 +409,11 @@ async def create_api_key(
     actual_key = api_key._generate_key()
     
     db.add(api_key)
+    db.flush()  # Ensure the API key is written to DB immediately
     db.commit()
     db.refresh(api_key)
+    
+    print(f"[DEBUG] Created API key {api_key.id} for user {current_user.email}")  # Debug log
     
     # Send API key creation notification
     try:
