@@ -408,6 +408,18 @@ async def create_api_key(
     db: Session = Depends(get_db)
 ):
     """Create a new API key"""
+    # Check existing API keys count first
+    existing_keys = db.query(APIKey).filter(
+        APIKey.user_id == current_user.id,
+        APIKey.is_active == True
+    ).count()
+    
+    if existing_keys >= 2:  # Limit to 2 API keys per user
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Maximum of 2 API keys allowed per user. Please delete an existing key first."
+        )
+    
     # Create new API key
     api_key = APIKey(
         user_id=current_user.id,
