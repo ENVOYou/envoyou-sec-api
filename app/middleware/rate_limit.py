@@ -126,8 +126,12 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             "/v1/auth/forgot-password": {"limit": 3, "window": 3600},  # 3 resets per hour
             "/v1/auth/verify-email": {"limit": 10, "window": 3600},  # 10 verifications per hour
 
-            # API key endpoints
-            "/v1/user/api-keys": {"limit": 10, "window": 3600},  # 10 key operations per hour
+            # API key endpoints - separate limits for read vs write
+            "/v1/user/api-keys": {
+                "GET": {"limit": 60, "window": 60},  # 60 reads per minute
+                "POST": {"limit": 5, "window": 300},  # 5 creates per 5 minutes
+                "DELETE": {"limit": 10, "window": 300},  # 10 deletes per 5 minutes
+            }
 
             # File upload endpoints
             "/v1/user/avatar": {"limit": 5, "window": 3600},  # 5 uploads per hour
@@ -144,7 +148,13 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         # Check if path matches any special endpoint
         for endpoint_path, limits in endpoint_limits.items():
             if path.startswith(endpoint_path):
-                return limits
+                # Check if limits are method-specific
+                if isinstance(limits, dict) and method in limits:
+                    return limits[method]
+                elif isinstance(limits, dict) and "limit" in limits:
+                    return limits
+                # If no method-specific limit, use default
+                continue
 
         # Return default limits
         return {

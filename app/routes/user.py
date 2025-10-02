@@ -489,15 +489,18 @@ async def delete_api_key(
     db: Session = Depends(get_db)
 ):
     """Delete an API key"""
+    print(f"[DEBUG] Attempting to delete API key {key_id} for user {current_user.email}")  # Debug log
+    
     api_key = db.query(APIKey).filter(
         APIKey.id == key_id,
         APIKey.user_id == current_user.id
     ).first()
     
     if not api_key:
+        print(f"[DEBUG] API key {key_id} not found for user {current_user.email}")  # Debug log
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="API key not found"
+            detail=f"API key not found or already deleted. Key ID: {key_id}"
         )
     
     # Hard delete the API key
