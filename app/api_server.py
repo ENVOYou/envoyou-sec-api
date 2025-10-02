@@ -95,6 +95,7 @@ from app.routes.emissions_factors import router as emissions_factors_router
 from app.routes.user_extended import router as user_extended_router
 from app.routes.agents import router as agents_router
 from app.routes.recaptcha import router as recaptcha_router
+from app.routes.developer import router as developer_router
 
 # Import security utilities
 from app.utils.security import is_public_endpoint, validate_api_key, rate_limit_dependency_factory
@@ -238,6 +239,7 @@ app.include_router(emissions_factors_router, prefix="/v1/emissions")
 app.include_router(validation_router, prefix="/v1/validation")
 app.include_router(admin_mapping_router, prefix="/v1/admin")
 app.include_router(user_extended_router, prefix="/v1/user")
+app.include_router(developer_router, prefix="/v1/developer")
 
 # AI Agents endpoints
 app.include_router(agents_router, prefix="/v1/agents")
