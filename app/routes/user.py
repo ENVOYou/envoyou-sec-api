@@ -241,6 +241,7 @@ async def get_user_profile(current_user: User = Depends(get_db_user)):
 @router.get("/stats", response_model=UserStatsResponse)
 async def get_user_stats(current_user: User = Depends(get_db_user), db: Session = Depends(get_db)):
     """Get user usage statistics"""
+    print(f"[DEBUG] Stats endpoint called for user {current_user.email}")  # Debug log
     from sqlalchemy import func
 
     # Get all active API keys for the user
