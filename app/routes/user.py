@@ -358,6 +358,14 @@ async def upload_avatar(
     
     db.commit()
     
+    # Invalidate cache after avatar update
+    try:
+        redis_service.invalidate_user_profile_cache(current_user.id)
+    except Exception as e:
+        print(f"Cache invalidation failed: {e}")
+    
+    print(f"[DEBUG] Avatar uploaded for user {current_user.email}: {avatar_url}")  # Debug log
+    
     return {
         "message": "Avatar uploaded successfully",
         "avatar_url": avatar_url
